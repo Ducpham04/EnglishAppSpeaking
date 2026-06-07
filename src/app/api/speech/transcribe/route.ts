@@ -33,7 +33,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const formData = await request.formData();
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch {
+      return NextResponse.json({ error: 'Request phải là multipart/form-data kèm file audio.' }, { status: 400 });
+    }
     const audio = formData.get('audio');
     if (!(audio instanceof File)) {
       return NextResponse.json({ error: 'Thiếu file audio.' }, { status: 400 });
