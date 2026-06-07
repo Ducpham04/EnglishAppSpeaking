@@ -17,6 +17,7 @@ export const proxy = auth((req: NextRequest & { auth?: { user?: { role?: string 
     pathname.startsWith('/register') ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/chat') ||
+    pathname.startsWith('/api/speech/transcribe') ||
     pathname.startsWith('/api/topics') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
