@@ -13,6 +13,7 @@ import { CEFRLevel, ConversationEvaluation, Topic, Message } from '@/lib/types';
 
 type Step = 'level' | 'topic' | 'speaking';
 type SpeechLanguage = 'auto' | 'en-US' | 'vi-VN';
+type SpeechEngine = 'cloud' | 'browser';
 type AssignmentBrief = {
   title: string;
   instruction: string | null;
@@ -361,6 +362,10 @@ export default function DemoClient() {
   const [showManualInput, setShowManualInput] = useState(false);
   const [aiVoice, setAiVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [speechLanguage, setSpeechLanguage] = useState<SpeechLanguage>('auto');
+  const [speechEngine, setSpeechEngine] = useState<SpeechEngine>('cloud');
+  const [isCloudSpeechSupported, setIsCloudSpeechSupported] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [cloudSpeechError, setCloudSpeechError] = useState<string | null>(null);
   const [speechDraft, setSpeechDraft] = useState<{ text: string; language: 'vi' | 'en' | 'mixed' } | null>(null);
   const [finalEvaluation, setFinalEvaluation] = useState<ConversationEvaluation | null>(null);
   const [assignmentBrief, setAssignmentBrief] = useState<AssignmentBrief | null>(null);
@@ -368,6 +373,9 @@ export default function DemoClient() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const ttsRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const {
     messages,
@@ -392,6 +400,14 @@ export default function DemoClient() {
     getCurrentTranscript,
     error: speechError,
   } = useSpeechRecognition();
+
+  useEffect(() => {
+    setIsCloudSpeechSupported(
+      typeof window !== 'undefined' &&
+      !!navigator.mediaDevices?.getUserMedia &&
+      typeof MediaRecorder !== 'undefined'
+    );
+  }, []);
 
   // Auto scroll
   useEffect(() => {
@@ -557,17 +573,111 @@ export default function DemoClient() {
   }, [messages, speakText]);
 
   // Handle mic button
+  const transcribeAudio = useCallback(async (blob: Blob) => {
+    setIsTranscribing(true);
+    setCloudSpeechError(null);
+    try {
+      const formData = new FormData();
+      const extension = blob.type.includes('mp4') ? 'm4a' : blob.type.includes('ogg') ? 'ogg' : 'webm';
+      formData.append('audio', blob, `speech.${extension}`);
+      if (speechLanguage === 'en-US') formData.append('language', 'en');
+      if (speechLanguage === 'vi-VN') formData.append('language', 'vi');
+
+      const res = await fetch('/api/speech/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCloudSpeechError(data.error || 'Không thể nhận diện giọng nói.');
+        return;
+      }
+      const text = typeof data.text === 'string' ? data.text.trim() : '';
+      if (!text) {
+        setCloudSpeechError('Chưa nghe được nội dung. Hãy nói rõ hơn hoặc thử chế độ Web.');
+        return;
+      }
+      setSpeechDraft({ text, language: detectLanguage(text) });
+    } catch {
+      setCloudSpeechError('Không thể gửi audio để nhận diện. Hãy thử lại hoặc chuyển sang Web.');
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, [speechLanguage]);
+
+  const stopMediaTracks = useCallback(() => {
+    mediaStreamRef.current?.getTracks().forEach(track => track.stop());
+    mediaStreamRef.current = null;
+  }, []);
+
+  const startCloudRecording = useCallback(async () => {
+    if (!isCloudSpeechSupported) {
+      setCloudSpeechError('Trình duyệt không hỗ trợ ghi âm cloud. Hãy dùng Chrome hoặc chuyển sang Web.');
+      return;
+    }
+    try {
+      setCloudSpeechError(null);
+      setSpeechDraft(null);
+      audioChunksRef.current = [];
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+      mediaStreamRef.current = stream;
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/mp4')
+          ? 'audio/mp4'
+          : '';
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      recorder.ondataavailable = event => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        stopMediaTracks();
+        mediaRecorderRef.current = null;
+        if (blob.size > 0) void transcribeAudio(blob);
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setIsRecording(true);
+    } catch {
+      setCloudSpeechError('Không thể mở microphone. Vui lòng cấp quyền mic và thử lại.');
+      stopMediaTracks();
+      setIsRecording(false);
+    }
+  }, [isCloudSpeechSupported, stopMediaTracks, transcribeAudio]);
+
+  const stopCloudRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    } else {
+      stopMediaTracks();
+    }
+    setIsRecording(false);
+  }, [stopMediaTracks]);
+
   const handleMicToggle = useCallback(() => {
     if (isRecording) {
-      stopListening();
-      setIsRecording(false);
+      if (speechEngine === 'cloud') stopCloudRecording();
+      else {
+        stopListening();
+        setIsRecording(false);
+      }
     } else {
       setSpeechDraft(null);
       resetTranscript();
-      startListening(speechLangForRecognition(speechLanguage));
-      setIsRecording(true);
+      if (speechEngine === 'cloud') void startCloudRecording();
+      else {
+        startListening(speechLangForRecognition(speechLanguage));
+        setIsRecording(true);
+      }
     }
-  }, [isRecording, speechLanguage, startListening, stopListening, resetTranscript]);
+  }, [isRecording, resetTranscript, speechEngine, speechLanguage, startCloudRecording, startListening, stopCloudRecording, stopListening]);
 
   const handleSpeechLanguageChange = useCallback((language: SpeechLanguage) => {
     setSpeechLanguage(language);
@@ -580,6 +690,10 @@ export default function DemoClient() {
 
   // Stop speech recognition and keep a draft so the learner can retry before sending.
   const handleStopForReview = useCallback(async () => {
+    if (speechEngine === 'cloud') {
+      stopCloudRecording();
+      return;
+    }
     let text = getCurrentTranscript();
     stopListening();
     setIsRecording(false);
@@ -590,7 +704,7 @@ export default function DemoClient() {
     if (!text) return;
     setSpeechDraft({ text: text.trim(), language: detectLanguage(text) });
     resetTranscript();
-  }, [getCurrentTranscript, stopListening, resetTranscript]);
+  }, [getCurrentTranscript, resetTranscript, speechEngine, stopCloudRecording, stopListening]);
 
   const handleSendTranscript = useCallback(async () => {
     const text = speechDraft?.text.trim();
@@ -604,9 +718,12 @@ export default function DemoClient() {
     setSpeechDraft(null);
     resetTranscript();
     window.speechSynthesis.cancel();
-    startListening(speechLangForRecognition(speechLanguage));
-    setIsRecording(true);
-  }, [resetTranscript, speechLanguage, startListening]);
+    if (speechEngine === 'cloud') void startCloudRecording();
+    else {
+      startListening(speechLangForRecognition(speechLanguage));
+      setIsRecording(true);
+    }
+  }, [resetTranscript, speechEngine, speechLanguage, startCloudRecording, startListening]);
 
   const handlePlayDraft = useCallback(() => {
     if (!speechDraft || typeof window === 'undefined') return;
@@ -839,6 +956,35 @@ export default function DemoClient() {
               <Star size={13} style={{ color: '#F59E0B' }} fill="#F59E0B" />
               <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{score}</span>
               <span style={{ color: 'var(--text-muted)' }}>pts</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }}>
+              {(['cloud', 'browser'] as SpeechEngine[]).map(engine => {
+                const active = speechEngine === engine;
+                return (
+                  <button
+                    key={engine}
+                    type="button"
+                    onClick={() => {
+                      if (isRecording || isTranscribing) return;
+                      setSpeechEngine(engine);
+                      setSpeechDraft(null);
+                    }}
+                    title={engine === 'cloud' ? 'Groq Whisper speech engine' : 'Browser Web Speech engine'}
+                    style={{
+                      border: 0,
+                      borderRadius: 6,
+                      padding: '5px 8px',
+                      background: active ? 'rgba(124,58,237,0.18)' : 'transparent',
+                      color: active ? 'var(--primary-light)' : 'var(--text-muted)',
+                      cursor: isRecording || isTranscribing ? 'not-allowed' : 'pointer',
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {engine === 'cloud' ? 'CLOUD' : 'WEB'}
+                  </button>
+                );
+              })}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }}>
               {SPEECH_LANGUAGES.map(language => {
@@ -1091,7 +1237,7 @@ export default function DemoClient() {
             )}
 
             {/* Error display */}
-            {(error || speechError) && (
+            {(error || speechError || cloudSpeechError) && (
               <div style={{
                 background: 'rgba(239,68,68,0.1)',
                 border: '1px solid rgba(239,68,68,0.25)',
@@ -1101,7 +1247,7 @@ export default function DemoClient() {
                 animation: 'fade-in 0.3s ease',
               }}>
                 <AlertCircle size={16} style={{ color: '#EF4444', flexShrink: 0 }} />
-                <p style={{ fontSize: 13, color: '#EF4444' }}>{error || speechError}</p>
+                <p style={{ fontSize: 13, color: '#EF4444' }}>{error || speechError || cloudSpeechError}</p>
               </div>
             )}
 
@@ -1259,7 +1405,12 @@ export default function DemoClient() {
                     🤔 AI đang suy nghĩ...
                   </p>
                 )}
-                {!isRecording && !isLoading && (
+                {isTranscribing && (
+                  <p style={{ fontSize: 13, color: '#06B6D4', fontWeight: 600 }}>
+                    Đang nhận diện giọng nói...
+                  </p>
+                )}
+                {!isRecording && !isLoading && !isTranscribing && (
                   <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                     {isConversationLocked ? 'Đã đạt mốc, hãy kết thúc buổi' : speechDraft ? 'Kiểm tra câu rồi gửi' : 'Nhấn mic để nói'}
                   </p>
@@ -1267,19 +1418,19 @@ export default function DemoClient() {
               </div>
 
               {/* Main Mic Button */}
-              {isSupported ? (
+              {(speechEngine === 'cloud' ? isCloudSpeechSupported : isSupported) ? (
                 <button
                   id="main-mic-btn"
                   className={`mic-button ${
                     isRecording ? 'mic-button-listening' :
-                    isLoading ? 'mic-button-processing' :
+                    (isLoading || isTranscribing) ? 'mic-button-processing' :
                     'mic-button-idle'
                   }`}
                   onClick={isRecording ? handleStopForReview : handleMicToggle}
-                  disabled={(isLoading && !isRecording) || (!isRecording && isConversationLocked)}
+                  disabled={((isLoading || isTranscribing) && !isRecording) || (!isRecording && isConversationLocked)}
                   title={isRecording ? 'Dừng để xem lại' : 'Bấm để nói'}
                 >
-                  {isLoading && !isRecording ? (
+                  {(isLoading || isTranscribing) && !isRecording ? (
                     <Loader2 size={32} color="white" />
                   ) : isRecording ? (
                     <Square size={28} color="white" fill="white" />

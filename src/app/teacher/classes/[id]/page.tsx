@@ -83,6 +83,11 @@ export default async function ClassDetail({ params }: { params: Promise<{ id: st
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <Link href={`/teacher/classes/${cls.id}/report`} style={{ textDecoration: 'none' }}>
+            <button style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid rgba(245,158,11,0.28)', background: 'rgba(245,158,11,0.08)', color: '#F59E0B', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <TrendingUp size={14} /> Báo cáo sâu
+            </button>
+          </Link>
           <Link href={`/teacher/classes/${cls.id}/edit`} style={{ textDecoration: 'none' }}>
             <button style={{ padding: '10px 16px', borderRadius: 10, border: '1px solid rgba(124,58,237,0.28)', background: 'rgba(124,58,237,0.08)', color: 'var(--primary-light)', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Edit3 size={14} /> Sửa lớp
