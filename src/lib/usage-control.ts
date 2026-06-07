@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { getActiveSubscription } from '@/lib/subscriptions';
 
 export type UsageLimitResult = {
   allowed: boolean;
@@ -46,18 +47,7 @@ function startOfTomorrow() {
 
 export async function checkUserUsageLimit(userId: string): Promise<UsageLimitResult> {
   const envLimits = getUsageLimits();
-  const activeSubscriptionPromise = prisma.subscription.findFirst({
-    where: {
-      userId,
-      status: { in: ['active', 'trialing'] },
-      OR: [
-        { endsAt: null },
-        { endsAt: { gt: new Date() } },
-      ],
-    },
-    orderBy: { createdAt: 'desc' },
-    include: { plan: true },
-  });
+  const activeSubscriptionPromise = getActiveSubscription(userId);
 
   const [activeSubscription, daily, monthly] = await Promise.all([
     activeSubscriptionPromise,

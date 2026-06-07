@@ -1,14 +1,18 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Users, Mic, Star } from 'lucide-react';
 import AdminSubscriptionForm from '@/components/AdminSubscriptionForm';
+import { getDaysUntil } from '@/lib/subscriptions';
 
-export default async function AdminStudents() {
+export default async function AdminStudents({ searchParams }: { searchParams?: Promise<{ plan?: string }> }) {
   const session = await auth();
   if (!session?.user) redirect('/login');
   if (session.user.role !== 'admin') redirect('/');
+  const params = await searchParams;
+  const planFilter = params?.plan ?? 'all';
 
   const [students, studentPlans] = await Promise.all([
     prisma.user.findMany({
@@ -44,17 +48,45 @@ export default async function AdminStudents() {
     _avg: { score: true },
   });
   const statsMap = Object.fromEntries(sessionCounts.map(s => [s.studentId, s]));
+  const filteredStudents = students.filter(student => {
+    const activeSubscription = student.subscriptions[0];
+    if (planFilter === 'no-plan') return !activeSubscription;
+    if (planFilter === 'expiring') {
+      const days = getDaysUntil(activeSubscription?.endsAt);
+      return days !== null && days >= 0 && days <= 7;
+    }
+    return true;
+  });
+  const filters = [
+    { href: '/admin/students', label: 'Tất cả', active: planFilter === 'all' },
+    { href: '/admin/students?plan=no-plan', label: 'Chưa có gói', active: planFilter === 'no-plan' },
+    { href: '/admin/students?plan=expiring', label: 'Sắp hết hạn', active: planFilter === 'expiring' },
+  ];
 
   return (
     <DashboardLayout title="Quản lý Học viên">
-      <div style={{ marginBottom: 16 }}>
-        <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>Tổng: <strong style={{ color: 'var(--text-primary)' }}>{students.length}</strong> học viên</span>
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>Hiển thị: <strong style={{ color: 'var(--text-primary)' }}>{filteredStudents.length}</strong> / {students.length} học viên</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {filters.map(filter => (
+            <Link key={filter.href} href={filter.href} style={{
+              textDecoration: 'none',
+              fontSize: 12,
+              fontWeight: 800,
+              padding: '8px 10px',
+              borderRadius: 7,
+              border: `1px solid ${filter.active ? 'rgba(124,58,237,0.35)' : 'rgba(255,255,255,0.08)'}`,
+              background: filter.active ? 'rgba(124,58,237,0.14)' : 'rgba(255,255,255,0.03)',
+              color: filter.active ? 'var(--primary-light)' : 'var(--text-secondary)',
+            }}>{filter.label}</Link>
+          ))}
+        </div>
       </div>
 
-      {students.length === 0 ? (
+      {filteredStudents.length === 0 ? (
         <div className="glass-card" style={{ padding: 48, textAlign: 'center' }}>
           <Users size={48} style={{ color: 'var(--text-muted)', display: 'block', margin: '0 auto 16px' }} />
-          <p style={{ color: 'var(--text-muted)' }}>Chưa có học viên nào.</p>
+          <p style={{ color: 'var(--text-muted)' }}>Không có học viên phù hợp bộ lọc.</p>
         </div>
       ) : (
         <div className="glass-card" style={{ overflow: 'hidden' }}>
@@ -67,13 +99,13 @@ export default async function AdminStudents() {
               </tr>
             </thead>
             <tbody>
-              {students.map((s, i) => {
+              {filteredStudents.map((s, i) => {
                 const stats = statsMap[s.id];
                 const lastSession = s.sessions[0];
                 const avgScore = stats?._avg.score ? Math.round(stats._avg.score) : null;
                 const activeSubscription = s.subscriptions[0];
                 return (
-                  <tr key={s.id} style={{ borderBottom: i < students.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                  <tr key={s.id} style={{ borderBottom: i < filteredStudents.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#10B981', flexShrink: 0 }}>

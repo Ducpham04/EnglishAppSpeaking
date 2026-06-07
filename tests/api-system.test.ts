@@ -6,15 +6,19 @@ const state = vi.hoisted(() => ({
   userFindUnique: vi.fn(),
   userCreate: vi.fn(),
   planFindUnique: vi.fn(),
+  subscriptionFindFirst: vi.fn(),
   subscriptionUpdateMany: vi.fn(),
   subscriptionCreate: vi.fn(),
+  classCount: vi.fn(),
   classFindUnique: vi.fn(),
   classFindFirst: vi.fn(),
   classUpdate: vi.fn(),
   classDelete: vi.fn(),
   classStudentCreate: vi.fn(),
+  classStudentCount: vi.fn(),
   classStudentFindFirst: vi.fn(),
   classStudentUpdate: vi.fn(),
+  assignmentCount: vi.fn(),
   assignmentFindUnique: vi.fn(),
   assignmentFindFirst: vi.fn(),
   assignmentCreate: vi.fn(),
@@ -24,6 +28,7 @@ const state = vi.hoisted(() => ({
   topicFindUnique: vi.fn(),
   topicUpdate: vi.fn(),
   topicDelete: vi.fn(),
+  sessionCount: vi.fn(),
   sessionCreate: vi.fn(),
   sessionFindFirst: vi.fn(),
   sessionUpdate: vi.fn(),
@@ -43,21 +48,25 @@ vi.mock('@/lib/prisma', () => ({
       findUnique: state.planFindUnique,
     },
     subscription: {
+      findFirst: state.subscriptionFindFirst,
       updateMany: state.subscriptionUpdateMany,
       create: state.subscriptionCreate,
     },
     class: {
+      count: state.classCount,
       findUnique: state.classFindUnique,
       findFirst: state.classFindFirst,
       update: state.classUpdate,
       delete: state.classDelete,
     },
     classStudent: {
+      count: state.classStudentCount,
       create: state.classStudentCreate,
       findFirst: state.classStudentFindFirst,
       update: state.classStudentUpdate,
     },
     assignment: {
+      count: state.assignmentCount,
       findUnique: state.assignmentFindUnique,
       findFirst: state.assignmentFindFirst,
       create: state.assignmentCreate,
@@ -71,6 +80,7 @@ vi.mock('@/lib/prisma', () => ({
       delete: state.topicDelete,
     },
     session: {
+      count: state.sessionCount,
       create: state.sessionCreate,
       findFirst: state.sessionFindFirst,
       update: state.sessionUpdate,
@@ -127,15 +137,19 @@ beforeEach(() => {
   state.userFindUnique.mockReset();
   state.userCreate.mockReset();
   state.planFindUnique.mockReset();
+  state.subscriptionFindFirst.mockReset();
   state.subscriptionUpdateMany.mockReset();
   state.subscriptionCreate.mockReset();
+  state.classCount.mockReset();
   state.classFindUnique.mockReset();
   state.classFindFirst.mockReset();
   state.classUpdate.mockReset();
   state.classDelete.mockReset();
   state.classStudentCreate.mockReset();
+  state.classStudentCount.mockReset();
   state.classStudentFindFirst.mockReset();
   state.classStudentUpdate.mockReset();
+  state.assignmentCount.mockReset();
   state.assignmentFindUnique.mockReset();
   state.assignmentFindFirst.mockReset();
   state.assignmentCreate.mockReset();
@@ -145,9 +159,15 @@ beforeEach(() => {
   state.topicFindUnique.mockReset();
   state.topicUpdate.mockReset();
   state.topicDelete.mockReset();
+  state.sessionCount.mockReset();
   state.sessionCreate.mockReset();
   state.sessionFindFirst.mockReset();
   state.sessionUpdate.mockReset();
+  state.subscriptionFindFirst.mockResolvedValue(null);
+  state.classCount.mockResolvedValue(0);
+  state.classStudentCount.mockResolvedValue(0);
+  state.assignmentCount.mockResolvedValue(0);
+  state.sessionCount.mockResolvedValue(0);
 });
 
 describe('production API role and system flows', () => {
@@ -375,6 +395,56 @@ describe('production API role and system flows', () => {
     expect(state.assignmentCreate).not.toHaveBeenCalled();
   });
 
+  it('blocks teachers when their plan assignment limit is reached', async () => {
+    state.authSession = { user: { id: 'teacher-1', role: 'teacher' } };
+    state.subscriptionFindFirst.mockResolvedValueOnce({
+      plan: {
+        classLimit: 3,
+        studentLimit: 50,
+        assignmentLimit: 1,
+        monthlySessionLimit: 300,
+      },
+    });
+    state.assignmentCount.mockResolvedValueOnce(1);
+
+    const blocked = await assignmentsRoute.POST(jsonRequest({
+      classId: 'class-1',
+      topicId: 'topic-1',
+      title: 'Practice',
+    }));
+
+    expect(blocked.status).toBe(402);
+    expect(state.classFindFirst).not.toHaveBeenCalled();
+    expect(state.assignmentCreate).not.toHaveBeenCalled();
+  });
+
+  it('blocks class joins when the teacher plan student limit is reached', async () => {
+    state.authSession = { user: { id: 'student-1', role: 'student' } };
+    state.classFindUnique.mockResolvedValueOnce({
+      id: 'class-1',
+      teacherId: 'teacher-1',
+      name: 'B1 Speaking',
+      level: 'B1',
+      status: 'active',
+      teacher: { name: 'Teacher', email: 'teacher@example.com' },
+      students: [],
+    });
+    state.subscriptionFindFirst.mockResolvedValueOnce({
+      plan: {
+        classLimit: 3,
+        studentLimit: 1,
+        assignmentLimit: 100,
+        monthlySessionLimit: 300,
+      },
+    });
+    state.classStudentCount.mockResolvedValueOnce(1);
+
+    const blocked = await classJoinRoute.POST(jsonRequest({ joinCode: 'B1DEMO' }));
+
+    expect(blocked.status).toBe(402);
+    expect(state.classStudentCreate).not.toHaveBeenCalled();
+  });
+
   it('lets teachers update their own topics and blocks deleting used topics', async () => {
     state.authSession = { user: { id: 'teacher-1', role: 'teacher' } };
     state.topicFindFirst.mockResolvedValueOnce({
@@ -560,6 +630,25 @@ describe('production API role and system flows', () => {
     }));
 
     expect(res.status).toBe(409);
+    expect(state.sessionCreate).not.toHaveBeenCalled();
+  });
+
+  it('blocks students when their monthly session limit is reached', async () => {
+    state.authSession = { user: { id: 'student-1', role: 'student' } };
+    state.topicFindUnique.mockResolvedValueOnce({ id: 'topic-expected' });
+    state.subscriptionFindFirst.mockResolvedValueOnce({
+      plan: {
+        monthlySessionLimit: 1,
+      },
+    });
+    state.sessionCount.mockResolvedValueOnce(1);
+
+    const res = await sessionStartRoute.POST(jsonRequest({
+      topicId: 'topic-expected',
+      level: 'B1',
+    }));
+
+    expect(res.status).toBe(402);
     expect(state.sessionCreate).not.toHaveBeenCalled();
   });
 

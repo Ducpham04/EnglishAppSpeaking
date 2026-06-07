@@ -1,14 +1,18 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Users, School, ClipboardList } from 'lucide-react';
 import AdminSubscriptionForm from '@/components/AdminSubscriptionForm';
+import { getDaysUntil } from '@/lib/subscriptions';
 
-export default async function AdminTeachers() {
+export default async function AdminTeachers({ searchParams }: { searchParams?: Promise<{ plan?: string }> }) {
   const session = await auth();
   if (!session?.user) redirect('/login');
   if (session.user.role !== 'admin') redirect('/');
+  const params = await searchParams;
+  const planFilter = params?.plan ?? 'all';
 
   const [teachers, teacherPlans] = await Promise.all([
     prisma.user.findMany({
@@ -38,17 +42,45 @@ export default async function AdminTeachers() {
       select: { id: true, name: true, priceVnd: true },
     }),
   ]);
+  const filteredTeachers = teachers.filter(teacher => {
+    const activeSubscription = teacher.subscriptions[0];
+    if (planFilter === 'no-plan') return !activeSubscription;
+    if (planFilter === 'expiring') {
+      const days = getDaysUntil(activeSubscription?.endsAt);
+      return days !== null && days >= 0 && days <= 7;
+    }
+    return true;
+  });
+  const filters = [
+    { href: '/admin/teachers', label: 'Tất cả', active: planFilter === 'all' },
+    { href: '/admin/teachers?plan=no-plan', label: 'Chưa có gói', active: planFilter === 'no-plan' },
+    { href: '/admin/teachers?plan=expiring', label: 'Sắp hết hạn', active: planFilter === 'expiring' },
+  ];
 
   return (
     <DashboardLayout title="Quản lý Giáo viên">
-      <div style={{ marginBottom: 16 }}>
-        <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>Tổng: <strong style={{ color: 'var(--text-primary)' }}>{teachers.length}</strong> giáo viên</span>
+      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>Hiển thị: <strong style={{ color: 'var(--text-primary)' }}>{filteredTeachers.length}</strong> / {teachers.length} giáo viên</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {filters.map(filter => (
+            <Link key={filter.href} href={filter.href} style={{
+              textDecoration: 'none',
+              fontSize: 12,
+              fontWeight: 800,
+              padding: '8px 10px',
+              borderRadius: 7,
+              border: `1px solid ${filter.active ? 'rgba(124,58,237,0.35)' : 'rgba(255,255,255,0.08)'}`,
+              background: filter.active ? 'rgba(124,58,237,0.14)' : 'rgba(255,255,255,0.03)',
+              color: filter.active ? 'var(--primary-light)' : 'var(--text-secondary)',
+            }}>{filter.label}</Link>
+          ))}
+        </div>
       </div>
 
-      {teachers.length === 0 ? (
+      {filteredTeachers.length === 0 ? (
         <div className="glass-card" style={{ padding: 48, textAlign: 'center' }}>
           <Users size={48} style={{ color: 'var(--text-muted)', display: 'block', margin: '0 auto 16px' }} />
-          <p style={{ color: 'var(--text-muted)' }}>Chưa có giáo viên nào.</p>
+          <p style={{ color: 'var(--text-muted)' }}>Không có giáo viên phù hợp bộ lọc.</p>
         </div>
       ) : (
         <div className="glass-card" style={{ overflow: 'hidden' }}>
@@ -61,12 +93,12 @@ export default async function AdminTeachers() {
               </tr>
             </thead>
             <tbody>
-              {teachers.map((t, i) => {
+              {filteredTeachers.map((t, i) => {
                 const totalStudents = t.teacherClasses.reduce((s, c) => s + c.students.length, 0);
                 const totalAssignments = t.teacherClasses.reduce((s, c) => s + c.assignments.length, 0);
                 const activeSubscription = t.subscriptions[0];
                 return (
-                  <tr key={t.id} style={{ borderBottom: i < teachers.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                  <tr key={t.id} style={{ borderBottom: i < filteredTeachers.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#F59E0B', flexShrink: 0 }}>

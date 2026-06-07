@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { formatLimitError, getTeacherPlanUsage } from '@/lib/subscriptions';
 
 const ALLOWED_STATUSES = new Set(['draft', 'published']);
 
@@ -41,6 +42,15 @@ export async function POST(req: NextRequest) {
   if (!classId || !topicId || !normalizedTitle) {
     return NextResponse.json({ error: 'classId, topicId, title là bắt buộc' }, { status: 400 });
   }
+
+  if (session.user.role === 'teacher') {
+    const usage = await getTeacherPlanUsage(session.user.id);
+    const assignmentLimit = usage.plan?.assignmentLimit;
+    if (assignmentLimit !== null && assignmentLimit !== undefined && usage.activeAssignments >= assignmentLimit) {
+      return NextResponse.json({ error: formatLimitError('assignment', assignmentLimit) }, { status: 402 });
+    }
+  }
+
   // Verify teacher owns this class
   const cls = await prisma.class.findFirst({
     where: {

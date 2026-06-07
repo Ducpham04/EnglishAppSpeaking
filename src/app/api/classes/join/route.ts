@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { normalizeJoinCode } from '@/lib/join-code';
 import { prisma } from '@/lib/prisma';
+import { formatLimitError, getTeacherPlanUsage } from '@/lib/subscriptions';
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -38,6 +39,12 @@ export async function POST(req: NextRequest) {
       },
       alreadyJoined: true,
     });
+  }
+
+  const teacherUsage = await getTeacherPlanUsage(cls.teacherId);
+  const studentLimit = teacherUsage.plan?.studentLimit;
+  if (studentLimit !== null && studentLimit !== undefined && teacherUsage.activeStudents >= studentLimit) {
+    return NextResponse.json({ error: formatLimitError('student', studentLimit) }, { status: 402 });
   }
 
   await prisma.classStudent.create({

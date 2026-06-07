@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { TOPICS } from '@/lib/topics';
+import { formatLimitError, getStudentPlanUsage } from '@/lib/subscriptions';
 
 export async function POST(request: NextRequest) {
   try {
@@ -86,6 +87,12 @@ export async function POST(request: NextRequest) {
           { status: 409 }
         );
       }
+    }
+
+    const usage = await getStudentPlanUsage(user.id);
+    const sessionLimit = usage.plan?.monthlySessionLimit;
+    if (sessionLimit !== null && sessionLimit !== undefined && usage.monthlySessions >= sessionLimit) {
+      return NextResponse.json({ error: formatLimitError('session', sessionLimit) }, { status: 402 });
     }
 
     const session = await prisma.session.create({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { generateJoinCode } from '@/lib/join-code';
+import { formatLimitError, getTeacherPlanUsage } from '@/lib/subscriptions';
 
 export async function GET() {
   const session = await auth();
@@ -24,6 +25,14 @@ export async function POST(req: NextRequest) {
   }
   const { name, description, level } = await req.json();
   if (!name) return NextResponse.json({ error: 'Tên lớp là bắt buộc' }, { status: 400 });
+
+  if (session.user.role === 'teacher') {
+    const usage = await getTeacherPlanUsage(session.user.id);
+    const classLimit = usage.plan?.classLimit;
+    if (classLimit !== null && classLimit !== undefined && usage.activeClasses >= classLimit) {
+      return NextResponse.json({ error: formatLimitError('class', classLimit) }, { status: 402 });
+    }
+  }
 
   let joinCode = generateJoinCode();
   for (let attempt = 0; attempt < 5; attempt++) {
