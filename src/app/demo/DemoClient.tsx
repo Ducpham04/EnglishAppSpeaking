@@ -5,14 +5,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Mic, MicOff, Square, Volume2, VolumeX, ChevronLeft, RotateCcw, CheckCircle, AlertCircle, Loader2, Star } from 'lucide-react';
+import { Mic, MicOff, Square, Volume2, VolumeX, ChevronLeft, RotateCcw, CheckCircle, AlertCircle, Loader2, Star, BookOpen, Send } from 'lucide-react';
 import { useConversation } from '@/hooks/useConversation';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { TOPICS, LEVEL_INFO } from '@/lib/topics';
 import { CEFRLevel, ConversationEvaluation, Topic, Message } from '@/lib/types';
 
 type Step = 'level' | 'topic' | 'speaking';
-type SpeechLanguage = 'en-US' | 'vi-VN';
+type SpeechLanguage = 'auto' | 'en-US' | 'vi-VN';
 type AssignmentBrief = {
   title: string;
   instruction: string | null;
@@ -22,6 +22,7 @@ type AssignmentBrief = {
 };
 
 const SPEECH_LANGUAGES: Array<{ label: string; value: SpeechLanguage }> = [
+  { label: 'Auto EN/VI', value: 'auto' },
   { label: 'English', value: 'en-US' },
   { label: 'Tiếng Việt', value: 'vi-VN' },
 ];
@@ -53,6 +54,53 @@ function splitForSpeech(text: string) {
     .split(/(?<=[.!?])\s+/)
     .map(part => part.trim())
     .filter(Boolean);
+}
+
+function detectLanguage(text: string): 'vi' | 'en' | 'mixed' {
+  const lower = text.toLowerCase();
+  const hasVietnameseMarks = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text);
+  const vietnameseWords = /\b(tôi|mình|em|anh|chị|là|và|của|muốn|không|có|được|vì|nên|nhưng|hôm nay|giáo viên|học)\b/i.test(lower);
+  const englishWords = /\b(i|you|we|they|am|is|are|want|like|because|today|usually|would|could|should|think)\b/i.test(lower);
+  if ((hasVietnameseMarks || vietnameseWords) && englishWords) return 'mixed';
+  if (hasVietnameseMarks || vietnameseWords) return 'vi';
+  return 'en';
+}
+
+function speechLangForRecognition(language: SpeechLanguage) {
+  if (language === 'auto') {
+    const browserLanguage = typeof navigator !== 'undefined' ? navigator.language : '';
+    return browserLanguage.toLowerCase().startsWith('vi') ? 'vi-VN' : 'en-US';
+  }
+  return language;
+}
+
+function extractPromptVocabulary(prompt: string) {
+  const vocabularyLine = prompt.match(/Vocabulary:\s*([^\n]+)/i)?.[1];
+  if (!vocabularyLine) return [];
+  return vocabularyLine
+    .replace(/["“”]/g, '')
+    .split(/,\s*/)
+    .map(item => item.trim().replace(/\.$/, ''))
+    .filter(Boolean)
+    .slice(0, 10);
+}
+
+function fallbackVocabulary(topic: Topic | null) {
+  if (!topic) return [];
+  const title = topic.title.toLowerCase();
+  if (title.includes('introduction')) return ['My name is...', 'I am from...', 'I live in...', 'I like...', 'Nice to meet you'];
+  if (title.includes('routine')) return ['wake up', 'go to school', 'in the morning', 'after that', 'usually'];
+  if (title.includes('food')) return ['I would like...', 'Can I have...', 'the menu', 'the bill', 'no spicy'];
+  if (title.includes('shopping')) return ['How much is it?', 'I am looking for...', 'Can I try it on?', 'Do you have...', 'too expensive'];
+  if (title.includes('travel')) return ['I am planning to...', 'I would like to visit...', 'book a hotel', 'go sightseeing', 'local food'];
+  if (title.includes('hobbies')) return ['in my free time', 'I enjoy...', 'I have been...', 'I prefer...', 'It helps me relax'];
+  if (title.includes('interview')) return ['My strength is...', 'I have experience in...', 'I am responsible for...', 'I solved...', 'I am interested in'];
+  return ['In my opinion...', 'I think that...', 'For example...', 'Could you explain?', 'That sounds interesting'];
+}
+
+function topicVocabulary(topic: Topic | null) {
+  const extracted = extractPromptVocabulary(topic?.systemPrompt ?? '');
+  return extracted.length > 0 ? extracted : fallbackVocabulary(topic);
 }
 
 function normalizeTopic(topic: Partial<Topic> & { title: string; id: string }): Topic {
@@ -248,6 +296,56 @@ function MessageBubble({ message }: { message: Message }) {
   );
 }
 
+function VocabularyPanel({ topic, words }: { topic: Topic | null; words: string[] }) {
+  return (
+    <aside className="glass-card" style={{
+      padding: 16,
+      position: 'sticky',
+      top: 92,
+      maxHeight: 'calc(100vh - 220px)',
+      overflowY: 'auto',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <BookOpen size={16} style={{ color: 'var(--primary-light)' }} />
+        <div>
+          <h3 style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 800 }}>Từ vựng gợi ý</h3>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{topic?.title ?? 'Speaking practice'}</p>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+        {words.map(word => (
+          <button
+            key={word}
+            type="button"
+            title="Gợi ý từ/cụm từ thường dùng"
+            style={{
+              textAlign: 'left',
+              padding: '9px 10px',
+              borderRadius: 8,
+              border: '1px solid rgba(255,255,255,0.07)',
+              background: 'rgba(255,255,255,0.035)',
+              color: 'var(--text-primary)',
+              fontSize: 12,
+              lineHeight: 1.4,
+              cursor: 'default',
+            }}
+          >
+            {word}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ padding: 12, borderRadius: 8, background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.16)' }}>
+        <p style={{ fontSize: 12, color: '#06B6D4', fontWeight: 800, marginBottom: 5 }}>Mẹo nhỏ</p>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+          Bạn có thể nói tiếng Việt khi cần, nhưng hãy thử nói lại ý chính bằng tiếng Anh để điểm speaking tốt hơn.
+        </p>
+      </div>
+    </aside>
+  );
+}
+
 // ---- Main Component ----
 export default function DemoClient() {
   const [step, setStep] = useState<Step>('level');
@@ -262,7 +360,8 @@ export default function DemoClient() {
   const [manualText, setManualText] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
   const [aiVoice, setAiVoice] = useState<SpeechSynthesisVoice | null>(null);
-  const [speechLanguage, setSpeechLanguage] = useState<SpeechLanguage>('en-US');
+  const [speechLanguage, setSpeechLanguage] = useState<SpeechLanguage>('auto');
+  const [speechDraft, setSpeechDraft] = useState<{ text: string; language: 'vi' | 'en' | 'mixed' } | null>(null);
   const [finalEvaluation, setFinalEvaluation] = useState<ConversationEvaluation | null>(null);
   const [assignmentBrief, setAssignmentBrief] = useState<AssignmentBrief | null>(null);
 
@@ -285,7 +384,6 @@ export default function DemoClient() {
     score,
   } = useConversation();
   const {
-    transcript,
     interimTranscript,
     isSupported,
     startListening,
@@ -464,22 +562,24 @@ export default function DemoClient() {
       stopListening();
       setIsRecording(false);
     } else {
+      setSpeechDraft(null);
       resetTranscript();
-      startListening(speechLanguage);
+      startListening(speechLangForRecognition(speechLanguage));
       setIsRecording(true);
     }
   }, [isRecording, speechLanguage, startListening, stopListening, resetTranscript]);
 
   const handleSpeechLanguageChange = useCallback((language: SpeechLanguage) => {
     setSpeechLanguage(language);
+    setSpeechDraft(null);
     if (!isRecording) return;
 
     resetTranscript();
-    startListening(language);
+    startListening(speechLangForRecognition(language));
   }, [isRecording, resetTranscript, startListening]);
 
-  // Send transcript when stopped
-  const handleSendTranscript = useCallback(async () => {
+  // Stop speech recognition and keep a draft so the learner can retry before sending.
+  const handleStopForReview = useCallback(async () => {
     let text = getCurrentTranscript();
     stopListening();
     setIsRecording(false);
@@ -487,11 +587,37 @@ export default function DemoClient() {
       await new Promise(resolve => window.setTimeout(resolve, 250));
       text = getCurrentTranscript();
     }
-    if (!text || isLoading || isConversationLocked) return;
+    if (!text) return;
+    setSpeechDraft({ text: text.trim(), language: detectLanguage(text) });
     resetTranscript();
+  }, [getCurrentTranscript, stopListening, resetTranscript]);
+
+  const handleSendTranscript = useCallback(async () => {
+    const text = speechDraft?.text.trim();
+    if (!text || isLoading || isConversationLocked) return;
+    setSpeechDraft(null);
     window.speechSynthesis.cancel();
     await sendMessage(text);
-  }, [getCurrentTranscript, isConversationLocked, isLoading, stopListening, resetTranscript, sendMessage]);
+  }, [speechDraft, isConversationLocked, isLoading, sendMessage]);
+
+  const handleRetrySpeech = useCallback(() => {
+    setSpeechDraft(null);
+    resetTranscript();
+    window.speechSynthesis.cancel();
+    startListening(speechLangForRecognition(speechLanguage));
+    setIsRecording(true);
+  }, [resetTranscript, speechLanguage, startListening]);
+
+  const handlePlayDraft = useCallback(() => {
+    if (!speechDraft || typeof window === 'undefined') return;
+    const text = speechDraft.text.trim();
+    if (!text) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = speechDraft.language === 'vi' ? 'vi-VN' : 'en-US';
+    utterance.rate = 0.92;
+    window.speechSynthesis.speak(utterance);
+  }, [speechDraft]);
 
   // Send manual text
   const handleSendManual = useCallback(async () => {
@@ -526,6 +652,7 @@ export default function DemoClient() {
 
   const levelList = Object.entries(LEVEL_INFO) as [CEFRLevel, typeof LEVEL_INFO[CEFRLevel]][];
   const filteredTopics = selectedLevel ? availableTopics.filter(t => t.level === selectedLevel) : availableTopics;
+  const vocabularySuggestions = topicVocabulary(selectedTopic);
 
   // ---- RENDER ----
   return (
@@ -733,7 +860,7 @@ export default function DemoClient() {
                       fontWeight: 700,
                     }}
                   >
-                    {language.value === 'en-US' ? 'EN' : 'VI'}
+                    {language.value === 'auto' ? 'AUTO' : language.value === 'en-US' ? 'EN' : 'VI'}
                   </button>
                 );
               })}
@@ -903,10 +1030,19 @@ export default function DemoClient() {
             flex: 1,
             overflowY: 'auto',
             padding: '24px',
-            maxWidth: 800,
             width: '100%',
             margin: '0 auto',
           }}>
+            <div style={{
+              maxWidth: 1120,
+              margin: '0 auto',
+              display: 'grid',
+              gridTemplateColumns: '260px minmax(0, 800px)',
+              gap: 20,
+              alignItems: 'start',
+            }}>
+            <VocabularyPanel topic={selectedTopic} words={vocabularySuggestions} />
+            <main style={{ minWidth: 0 }}>
             {assignmentBrief && (
               <div className="glass-card" style={{ padding: 16, marginBottom: 16, borderColor: 'rgba(16,185,129,0.22)' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
@@ -988,6 +1124,8 @@ export default function DemoClient() {
             )}
 
             <div ref={messagesEndRef} />
+            </main>
+            </div>
           </div>
 
           {/* Interim transcript */}
@@ -1005,26 +1143,51 @@ export default function DemoClient() {
           )}
 
           {/* Transcript ready to send */}
-          {transcript && !interimTranscript && !isRecording && (
+          {speechDraft && !isRecording && (
             <div style={{
               background: 'rgba(124,58,237,0.1)',
               borderTop: '1px solid rgba(124,58,237,0.2)',
               padding: '14px 24px',
               maxWidth: 800, width: '100%', margin: '0 auto',
-              display: 'flex', alignItems: 'center', gap: 12,
+              display: 'grid', gap: 10,
             }}>
-              <p style={{ flex: 1, fontSize: 14, color: 'var(--text-primary)' }}>
-                📝 {transcript}
-              </p>
-              <button
-                id="send-transcript-btn"
-                className="btn-primary"
-                onClick={handleSendTranscript}
-                disabled={isLoading || isConversationLocked}
-                style={{ padding: '8px 20px', fontSize: 13 }}
-              >
-                {isLoading ? <Loader2 size={14} style={{ animation: 'spin-slow 1s linear infinite' }} /> : 'Gửi →'}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>
+                    Bản nháp trước khi gửi · {speechDraft.language === 'vi' ? 'Tiếng Việt' : speechDraft.language === 'mixed' ? 'EN/VI mixed' : 'English'}
+                  </p>
+                  <p style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.6 }}>
+                    {speechDraft.text}
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handlePlayDraft}
+                  style={draftButtonStyle}
+                >
+                  <Volume2 size={13} /> Nghe lại
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRetrySpeech}
+                  disabled={isLoading || isConversationLocked}
+                  style={draftButtonStyle}
+                >
+                  <RotateCcw size={13} /> Nói lại
+                </button>
+                <button
+                  id="send-transcript-btn"
+                  className="btn-primary"
+                  onClick={handleSendTranscript}
+                  disabled={isLoading || isConversationLocked}
+                  style={{ padding: '8px 18px', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  {isLoading ? <Loader2 size={14} style={{ animation: 'spin-slow 1s linear infinite' }} /> : <Send size={13} />}
+                  Gửi
+                </button>
+              </div>
             </div>
           )}
 
@@ -1042,7 +1205,7 @@ export default function DemoClient() {
                 value={manualText}
                 onChange={e => setManualText(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSendManual()}
-                placeholder="Nhập câu tiếng Anh..."
+                placeholder="Nhập câu tiếng Anh hoặc tiếng Việt..."
                 style={{
                   flex: 1, background: 'rgba(255,255,255,0.05)',
                   border: '1px solid rgba(124,58,237,0.3)',
@@ -1088,7 +1251,7 @@ export default function DemoClient() {
               <div style={{ textAlign: 'center', minWidth: 120 }}>
                 {isRecording && (
                   <p style={{ fontSize: 13, color: '#EF4444', fontWeight: 600 }}>
-                    🔴 Đang nghe... bấm nút vuông để gửi
+                    🔴 Đang nghe... bấm nút vuông để xem lại
                   </p>
                 )}
                 {isLoading && (
@@ -1098,7 +1261,7 @@ export default function DemoClient() {
                 )}
                 {!isRecording && !isLoading && (
                   <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                    {isConversationLocked ? 'Đã đạt mốc, hãy kết thúc buổi' : 'Nhấn mic để nói'}
+                    {isConversationLocked ? 'Đã đạt mốc, hãy kết thúc buổi' : speechDraft ? 'Kiểm tra câu rồi gửi' : 'Nhấn mic để nói'}
                   </p>
                 )}
               </div>
@@ -1112,9 +1275,9 @@ export default function DemoClient() {
                     isLoading ? 'mic-button-processing' :
                     'mic-button-idle'
                   }`}
-                  onClick={isRecording ? handleSendTranscript : handleMicToggle}
+                  onClick={isRecording ? handleStopForReview : handleMicToggle}
                   disabled={(isLoading && !isRecording) || (!isRecording && isConversationLocked)}
-                  title={isRecording ? 'Dừng và gửi' : 'Bấm để nói'}
+                  title={isRecording ? 'Dừng để xem lại' : 'Bấm để nói'}
                 >
                   {isLoading && !isRecording ? (
                     <Loader2 size={32} color="white" />
@@ -1182,3 +1345,17 @@ export default function DemoClient() {
     </div>
   );
 }
+
+const draftButtonStyle = {
+  padding: '8px 12px',
+  borderRadius: 8,
+  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'rgba(255,255,255,0.04)',
+  color: 'var(--text-secondary)',
+  cursor: 'pointer',
+  fontSize: 12,
+  fontWeight: 700,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+};

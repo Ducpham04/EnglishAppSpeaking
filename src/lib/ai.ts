@@ -331,6 +331,11 @@ export async function getAIResponse(
 CEFR Level: ${level}
 Topic: ${topicTitle}
 
+Language handling:
+- The student may speak English, Vietnamese, or a mix. Understand Vietnamese input instead of treating it as noise.
+- Keep the practice goal as English speaking. If the student uses Vietnamese, briefly acknowledge the meaning, give a simple English sentence they can say, then continue with an English follow-up question.
+- Do not reward Vietnamese-only answers as strong English speaking. Corrections and final evaluation may still flag too much Vietnamese.
+
 ${RESPONSE_FORMAT_INSTRUCTION}
 
 ${historyText ? `Previous conversation:\n${historyText}\n\n` : ''}Now the student says: "${studentMessage}"
