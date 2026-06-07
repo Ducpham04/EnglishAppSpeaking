@@ -13,6 +13,7 @@ type NavItem = { label: string; href: string; icon: React.ElementType };
 
 const STUDENT_NAV: NavItem[] = [
   { label: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
+  { label: 'Lớp học', href: '/student/classes', icon: School },
   { label: 'Bài tập', href: '/student/assignments', icon: ClipboardList },
   { label: 'Lịch sử', href: '/student/sessions', icon: History },
   { label: 'Tiến độ', href: '/student/progress', icon: TrendingUp },

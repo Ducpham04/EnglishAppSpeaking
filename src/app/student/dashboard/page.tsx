@@ -41,7 +41,7 @@ export default async function StudentDashboard() {
       orderBy: { deadline: 'asc' },
       take: 5,
     }),
-    prisma.classStudent.count({ where: { studentId } }),
+    prisma.classStudent.count({ where: { studentId, status: 'active', class: { status: 'active' } } }),
   ]);
 
   const totalSessions = await prisma.session.count({ where: { studentId } });
@@ -109,7 +109,9 @@ export default async function StudentDashboard() {
         <StatsCard icon={Clock} label="Tổng thời gian" value={formatDuration(totalDuration._sum.durationSec ?? 0)} color="#06B6D4" />
         <StatsCard icon={Star} label="Điểm TB" value={avgScore._avg.score ? Math.round(avgScore._avg.score) : '—'} color="#F59E0B" />
         <StatsCard icon={Flame} label="Streak" value={`${streak} ngày`} color="#EF4444" />
-        <StatsCard icon={BookOpen} label="Lớp học" value={enrollments} color="#10B981" />
+        <Link href="/student/classes" style={{ textDecoration: 'none' }}>
+          <StatsCard icon={BookOpen} label="Lớp học" value={enrollments} color="#10B981" />
+        </Link>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
