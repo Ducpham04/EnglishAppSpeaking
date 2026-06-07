@@ -3,20 +3,40 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Users, Mic, Star } from 'lucide-react';
+import AdminSubscriptionForm from '@/components/AdminSubscriptionForm';
 
 export default async function AdminStudents() {
   const session = await auth();
   if (!session?.user) redirect('/login');
   if (session.user.role !== 'admin') redirect('/');
 
-  const students = await prisma.user.findMany({
-    where: { role: 'student' },
-    include: {
-      enrollments: { include: { class: true } },
-      sessions: { orderBy: { startedAt: 'desc' }, take: 1 },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  const [students, studentPlans] = await Promise.all([
+    prisma.user.findMany({
+      where: { role: 'student' },
+      include: {
+        enrollments: { include: { class: true } },
+        sessions: { orderBy: { startedAt: 'desc' }, take: 1 },
+        subscriptions: {
+          where: {
+            status: { in: ['active', 'trialing'] },
+            OR: [
+              { endsAt: null },
+              { endsAt: { gt: new Date() } },
+            ],
+          },
+          include: { plan: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.plan.findMany({
+      where: { role: 'student', isActive: true },
+      orderBy: { priceVnd: 'asc' },
+      select: { id: true, name: true, priceVnd: true },
+    }),
+  ]);
 
   const sessionCounts = await prisma.session.groupBy({
     by: ['studentId'],
@@ -41,7 +61,7 @@ export default async function AdminStudents() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                {['Học viên', 'Email', 'Lớp học', 'Sessions', 'Điểm TB', 'Hoạt động gần nhất', 'Trạng thái'].map(h => (
+                {['Học viên', 'Email', 'Lớp học', 'Sessions', 'Điểm TB', 'Hoạt động gần nhất', 'Gói hiện tại', 'Trạng thái', 'Cấp gói'].map(h => (
                   <th key={h} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -51,6 +71,7 @@ export default async function AdminStudents() {
                 const stats = statsMap[s.id];
                 const lastSession = s.sessions[0];
                 const avgScore = stats?._avg.score ? Math.round(stats._avg.score) : null;
+                const activeSubscription = s.subscriptions[0];
                 return (
                   <tr key={s.id} style={{ borderBottom: i < students.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
                     <td style={{ padding: '14px 16px' }}>
@@ -85,10 +106,29 @@ export default async function AdminStudents() {
                         ? new Date(lastSession.startedAt).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
                         : '—'}
                     </td>
+                    <td style={{ padding: '14px 16px', minWidth: 150 }}>
+                      {activeSubscription ? (
+                        <div>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'rgba(16,185,129,0.15)', color: '#10B981' }}>
+                            {activeSubscription.plan.name}
+                          </span>
+                          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 5 }}>
+                            {activeSubscription.endsAt ? `Hết hạn ${activeSubscription.endsAt.toLocaleDateString('vi-VN')}` : 'Không hạn'}
+                          </p>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}>
+                          Chưa có gói
+                        </span>
+                      )}
+                    </td>
                     <td style={{ padding: '14px 16px' }}>
                       <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: s.status === 'active' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: s.status === 'active' ? '#10B981' : '#EF4444' }}>
                         {s.status === 'active' ? 'Hoạt động' : s.status}
                       </span>
+                    </td>
+                    <td style={{ padding: '14px 16px' }}>
+                      <AdminSubscriptionForm userId={s.id} plans={studentPlans} />
                     </td>
                   </tr>
                 );
