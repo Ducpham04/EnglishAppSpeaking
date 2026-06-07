@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// 1. Users
+// ============================================
+model User {
+  id           String   @id @default(cuid())
+  role         String   @default("student") // admin, teacher, student
+  name         String
+  email        String   @unique
+  passwordHash String
+  avatarUrl    String?
+  status       String   @default("active") // active, inactive, banned
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  teacherClasses  Class[]          @relation("TeacherClasses")
+  enrollments     ClassStudent[]
+  teacherTopics   Topic[]          @relation("TopicCreator")
+  teacherAssigns  Assignment[]     @relation("TeacherAssignments")
+  sessions        Session[]
+  aiUsageLogs     AiUsageLog[]
+  progressReports ProgressReport[]
+  subscriptions   Subscription[]
+
+  @@map("users")
+}
+
+// ============================================
+// 2. Classes
+// ============================================
+model Class {
+  id          String   @id @default(cuid())
+  teacherId   String
+  joinCode    String   @unique
+  name        String
+  description String?
+  level       String?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teacher     User           @relation("TeacherClasses", fields: [teacherId], references: [id])
+  students    ClassStudent[]
+  assignments Assignment[]
+  reports     ProgressReport[]
+
+  @@map("classes")
+}
+
+// ============================================
+// 3. Class Students (join table)
+// ============================================
+model ClassStudent {
+  id        String   @id @default(cuid())
+  classId   String
+  studentId String
+  joinedAt  DateTime @default(now())
+  status    String   @default("active")
+
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, studentId])
+  @@map("class_students")
+}
+
+// ============================================
+// 4. Topics
+// ============================================
+model Topic {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  level           String
+  systemPrompt    String
+  openingQuestion String?
+  icon            String   @default("📚")
+  isPublic        Boolean  @default(true)
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  createdBy   User?        @relation("TopicCreator", fields: [createdById], references: [id])
+  assignments Assignment[]
+  sessions    Session[]
+
+  @@map("topics")
+}
+
+// ============================================
+// 5. Assignments
+// ============================================
+model Assignment {
+  id             String    @id @default(cuid())
+  classId        String
+  topicId        String
+  teacherId      String
+  title          String
+  instruction    String?
+  deadline       DateTime?
+  minDurationSec Int       @default(300)
+  minMessages    Int       @default(5)
+  status         String    @default("draft")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  class    Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  topic    Topic     @relation(fields: [topicId], references: [id])
+  teacher  User      @relation("TeacherAssignments", fields: [teacherId], references: [id])
+  sessions Session[]
+
+  @@map("assignments")
+}
+
+// ============================================
+// 6. Speaking Sessions
+// ============================================
+model Session {
+  id                String    @id @default(cuid())
+  studentId         String
+  assignmentId      String?
+  topicId           String
+  level             String
+  startedAt         DateTime  @default(now())
+  endedAt           DateTime?
+  durationSec       Int       @default(0)
+  totalUserMessages Int       @default(0)
+  totalAiMessages   Int       @default(0)
+  score             Int?
+  taskScore         Int?
+  fluencyScore      Int?
+  grammarScore      Int?
+  vocabularyScore   Int?
+  coherenceScore    Int?
+  feedbackJson      String?
+  status            String    @default("active")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  student     User         @relation(fields: [studentId], references: [id])
+  assignment  Assignment?  @relation(fields: [assignmentId], references: [id])
+  topic       Topic        @relation(fields: [topicId], references: [id])
+  messages    Message[]
+  aiUsageLogs AiUsageLog[]
+
+  @@map("sessions")
+}
+
+// ============================================
+// 7. Messages
+// ============================================
+model Message {
+  id          String   @id @default(cuid())
+  sessionId   String
+  role        String
+  content     String
+  corrections String?
+  aiMetadata  String?
+  createdAt   DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// ============================================
+// 8. AI Usage Logs
+// ============================================
+model AiUsageLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  sessionId     String?
+  provider      String
+  model         String
+  inputTokens   Int      @default(0)
+  outputTokens  Int      @default(0)
+  estimatedCost Float    @default(0)
+  createdAt     DateTime @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id])
+  session Session? @relation(fields: [sessionId], references: [id])
+
+  @@map("ai_usage_logs")
+}
+
+// ============================================
+// 9. Progress Reports
+// ============================================
+model ProgressReport {
+  id               String   @id @default(cuid())
+  studentId        String
+  classId          String
+  periodType       String
+  startDate        DateTime
+  endDate          DateTime
+  totalSessions    Int      @default(0)
+  totalDurationSec Int      @default(0)
+  averageScore     Int?
+  commonMistakes   String?
+  aiSummary        String?
+  teacherNote      String?
+  createdAt        DateTime @default(now())
+
+  student User  @relation(fields: [studentId], references: [id])
+  class   Class @relation(fields: [classId], references: [id])
+
+  @@map("progress_reports")
+}
+
+// ============================================
+// 10. Commercial Plans
+// ============================================
+model Plan {
+  id                  String   @id @default(cuid())
+  code                String   @unique
+  name                String
+  description         String?
+  role                String   @default("student") // student, teacher, school
+  priceVnd            Int      @default(0)
+  dailyTokenLimit     Int      @default(60000)
+  monthlyTokenLimit   Int      @default(1200000)
+  monthlySessionLimit Int?
+  classLimit          Int?
+  studentLimit        Int?
+  assignmentLimit     Int?
+  featuresJson        String?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+// ============================================
+// 11. Manual Subscriptions
+// ============================================
+model Subscription {
+  id          String    @id @default(cuid())
+  userId      String
+  planId      String
+  status      String    @default("active") // active, trialing, past_due, canceled, expired
+  startsAt    DateTime  @default(now())
+  endsAt      DateTime?
+  activatedBy String?
+  paymentNote String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId, status])
+  @@index([planId])
+  @@map("subscriptions")
+}
