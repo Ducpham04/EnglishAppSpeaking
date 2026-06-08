@@ -28,6 +28,7 @@ Mở `http://localhost:3000` và kiểm tra ứng dụng.
 - `npm run lint` — kiểm tra lint
 - `npm run type-check` — kiểm tra TypeScript không emit
 - `npm run test` — chạy unit tests
+- `npm run e2e` — chạy Playwright E2E tests
 - `npm run prisma:migrate` — apply migrations production
 - `npm run prisma:dev` — tạo migration local
 
@@ -60,6 +61,12 @@ AI_RATE_LIMIT_PER_IP_PER_HOUR=20
 5. Nếu cần, bật rate limit qua `AI_RATE_LIMIT_PER_IP_PER_HOUR`.
 6. Chạy `npm run lint && npm run type-check && npm run test && npm run build`.
 
+Tài liệu vận hành:
+- Branch/release: `docs/BRANCHING_AND_RELEASES.md`
+- Neon backup: `docs/NEON_BACKUP_POLICY.md`
+- Observability/Sentry: `docs/OBSERVABILITY.md`
+- Release note template: `docs/RELEASE_TEMPLATE.md`
+
 > Lưu ý: hiện dự án đã chuyển Prisma sang `postgresql` provider. Nếu bạn muốn tiếp tục dùng local dev, cần chạy PostgreSQL cục bộ hoặc sử dụng dịch vụ database trên máy.
 
 ## Kiểm tra trước deploy
@@ -76,6 +83,7 @@ AI_RATE_LIMIT_PER_IP_PER_HOUR=20
 - Trong Vercel, đặt biến môi trường `DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`.
 - Build command khuyến nghị trên Vercel: `npm run vercel-build`.
 - Nếu deploy trên server khác, chạy `npm run build` rồi `npm run start`.
+- Production chỉ nên deploy từ branch `main`; các thay đổi nhỏ đi qua `develop` và Pull Request trước.
 
 ### Production DB nhanh với Neon
 1. Tạo project/database trên Neon.
@@ -95,4 +103,17 @@ AI_RATE_LIMIT_PER_IP_PER_HOUR=20
 - Không commit `NEXTAUTH_SECRET` và API key vào Git.
 
 ## CI
-Nếu dùng CI, thêm bước `npm run type-check` để đảm bảo TypeScript sạch.
+GitHub Actions chạy tự động khi push hoặc mở Pull Request vào `develop` và `main`.
+
+Pipeline hiện tại:
+- PostgreSQL service cho CI
+- `npm ci`
+- `prisma migrate deploy`
+- seed dữ liệu demo
+- `npm run lint`
+- `npm run type-check`
+- `npm test -- --run`
+- `npm run build`
+- `npm run e2e`
+
+Trước khi merge `develop` vào `main`, cập nhật `CHANGELOG.md` và kiểm tra backup Neon nếu release có migration.

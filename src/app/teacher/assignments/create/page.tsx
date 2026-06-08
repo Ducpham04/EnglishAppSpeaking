@@ -73,9 +73,8 @@ export default function CreateAssignmentPage() {
   const router = useRouter();
   const [classes, setClasses] = useState<ClassOption[]>([]);
   const [topics, setTopics] = useState<TopicOption[]>([]);
-  const [classId, setClassId] = useState(() => getQueryValue('classId'));
+  const [classId, setClassId] = useState('');
   const [topicId, setTopicId] = useState('');
-  const [initialTopicId] = useState(() => getQueryValue('topicId'));
   const [title, setTitle] = useState('');
   const [goal, setGoal] = useState('');
   const [scenario, setScenario] = useState('');
@@ -89,6 +88,20 @@ export default function CreateAssignmentPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      const queryClassId = getQueryValue('classId');
+      const queryTopicId = getQueryValue('topicId');
+      if (queryClassId) setClassId(queryClassId);
+      if (queryTopicId) setTopicId(queryTopicId);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const loadOptions = async () => {
       setLoadingOptions(true);
       try {
@@ -99,7 +112,6 @@ export default function CreateAssignmentPage() {
         const [classesData, topicsData] = await Promise.all([classesRes.json(), topicsRes.json()]);
         setClasses(classesData.classes || []);
         setTopics(topicsData.topics || []);
-        if (initialTopicId) setTopicId(initialTopicId);
       } catch {
         setError('Không thể tải danh sách lớp hoặc chủ đề.');
       } finally {
@@ -108,7 +120,7 @@ export default function CreateAssignmentPage() {
     };
 
     loadOptions();
-  }, [initialTopicId]);
+  }, []);
 
   const selectedClass = classes.find(item => item.id === classId);
   const selectedTopic = topics.find(item => item.id === topicId);

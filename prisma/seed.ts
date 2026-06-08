@@ -11,7 +11,12 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: 'admin@gbspeaking.com' },
-    update: {},
+    update: {
+      name: 'Admin',
+      passwordHash: adminPassword,
+      role: 'admin',
+      status: 'active',
+    },
     create: {
       name: 'Admin',
       email: 'admin@gbspeaking.com',
@@ -22,7 +27,12 @@ async function main() {
 
   const teacher = await prisma.user.upsert({
     where: { email: 'teacher@gbspeaking.com' },
-    update: {},
+    update: {
+      name: 'Thầy Minh',
+      passwordHash: teacherPassword,
+      role: 'teacher',
+      status: 'active',
+    },
     create: {
       name: 'Thầy Minh',
       email: 'teacher@gbspeaking.com',
@@ -33,7 +43,12 @@ async function main() {
 
   const student = await prisma.user.upsert({
     where: { email: 'student@gbspeaking.com' },
-    update: {},
+    update: {
+      name: 'Nguyễn Văn A',
+      passwordHash: studentPassword,
+      role: 'student',
+      status: 'active',
+    },
     create: {
       name: 'Nguyễn Văn A',
       email: 'student@gbspeaking.com',
@@ -44,7 +59,12 @@ async function main() {
 
   const student2 = await prisma.user.upsert({
     where: { email: 'student2@gbspeaking.com' },
-    update: {},
+    update: {
+      name: 'Trần Thị B',
+      passwordHash: studentPassword,
+      role: 'student',
+      status: 'active',
+    },
     create: {
       name: 'Trần Thị B',
       email: 'student2@gbspeaking.com',
