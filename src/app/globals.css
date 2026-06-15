@@ -222,12 +222,12 @@ h1, h2, h3, h4, h5, h6 {
 
 .mic-button-idle {
   background: var(--gradient-primary);
-  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.4);
+  box-shadow: 0 8px 32px rgba(37, 99, 235, 0.28);
 }
 
 .mic-button-idle:hover {
   transform: scale(1.05);
-  box-shadow: 0 12px 40px rgba(124, 58, 237, 0.6);
+  box-shadow: 0 12px 40px rgba(20, 184, 166, 0.34);
 }
 
 .mic-button-listening {
@@ -311,6 +311,257 @@ h1, h2, h3, h4, h5, h6 {
   background: #FFFFFF;
   border: 1px solid var(--border-glass);
   border-radius: 14px 14px 14px 4px;
+}
+
+/* =============================
+   STUDENT WORKSPACE
+   ============================= */
+.student-focus-hero {
+  margin-bottom: 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.student-focus-main,
+.student-focus-panel {
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  box-shadow: var(--shadow-card);
+}
+
+.student-focus-main {
+  padding: 28px;
+  background:
+    linear-gradient(135deg, rgba(239, 246, 255, 0.92), rgba(240, 253, 250, 0.72)),
+    #FFFFFF;
+}
+
+.student-focus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid #BFDBFE;
+  background: #FFFFFF;
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 850;
+  margin-bottom: 18px;
+}
+
+.student-focus-badge svg {
+  color: var(--accent);
+}
+
+.student-focus-main h2 {
+  max-width: 780px;
+  color: var(--text-primary);
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.12;
+  font-weight: 850;
+  margin-bottom: 10px;
+}
+
+.student-focus-main p {
+  max-width: 680px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.student-focus-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
+.student-focus-panel {
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.student-focus-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+}
+
+.student-focus-step.is-active {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+}
+
+.student-focus-step svg {
+  color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.student-focus-step strong,
+.student-focus-step span {
+  display: block;
+}
+
+.student-focus-step strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.student-focus-step span {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* =============================
+   PRACTICE ROOM
+   ============================= */
+.practice-room-grid {
+  max-width: 1160px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 270px minmax(0, 820px);
+  gap: 20px;
+  align-items: start;
+}
+
+.practice-side-panel {
+  padding: 16px;
+  position: sticky;
+  top: 92px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
+.practice-mission-panel {
+  padding: 18px;
+  margin-bottom: 16px;
+  border-color: #BFDBFE;
+  background:
+    linear-gradient(135deg, rgba(239, 246, 255, 0.9), rgba(255, 255, 255, 0.98)),
+    #FFFFFF;
+}
+
+.practice-mission-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.practice-mission-header p {
+  color: var(--primary-dark);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.practice-mission-header h2 {
+  color: var(--text-primary);
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 850;
+  margin-bottom: 5px;
+}
+
+.practice-mission-header span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.practice-mission-topic {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #FFFFFF;
+  border: 1px solid #BFDBFE;
+  font-size: 25px;
+  flex-shrink: 0;
+}
+
+.practice-mission-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.practice-progress-mini {
+  padding: 11px;
+  border-radius: 8px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+}
+
+.practice-progress-mini > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.practice-progress-mini span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.practice-progress-mini strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.practice-progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #E5E7EB;
+  overflow: hidden;
+}
+
+.practice-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+.practice-coach-note {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 11px 12px;
+  border-radius: 8px;
+  background: #F0FDFA;
+  border: 1px solid #99F6E4;
+}
+
+.practice-coach-note svg {
+  color: #0F766E;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.practice-coach-note p {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .trust-row {
@@ -1058,6 +1309,17 @@ th.admin-action-col {
     max-width: none !important;
     padding: 24px 16px 40px !important;
   }
+
+  .student-focus-hero,
+  .practice-room-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .practice-side-panel {
+    position: static;
+    max-height: none;
+    order: 2;
+  }
 }
 
 @media (max-width: 520px) {
@@ -1102,5 +1364,24 @@ th.admin-action-col {
 
   .hero-badge {
     align-items: flex-start;
+  }
+
+  .student-focus-main,
+  .student-focus-panel {
+    padding: 18px;
+  }
+
+  .student-focus-actions,
+  .student-focus-actions a,
+  .student-focus-actions button {
+    width: 100%;
+  }
+
+  .practice-mission-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .practice-mission-header {
+    flex-direction: column-reverse;
   }
 }

@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import StatsCard from '@/components/StatsCard';
 import StudentJoinClassForm from '@/components/StudentJoinClassForm';
 import Link from 'next/link';
-import { Mic, Clock, Star, Flame, CheckCircle, ChevronRight, BookOpen, ClipboardList, History, BarChart3 } from 'lucide-react';
+import { Mic, Clock, Star, Flame, CheckCircle, ChevronRight, BookOpen, ClipboardList, History, BarChart3, Target, MessageSquareText, Sparkles } from 'lucide-react';
 
 function formatDuration(sec: number) {
   const h = Math.floor(sec / 3600);
@@ -73,6 +73,13 @@ export default async function StudentDashboard() {
     const done = sessions.some(s => s.assignmentId === a.id && s.status === 'completed');
     return !done;
   });
+  const nextAssignment = pendingAssignments[0];
+  const latestCompleted = sessions.find(s => s.status === 'completed');
+  const practiceGoal = Math.max(3, Math.min(8, pendingAssignments.length + 3));
+  const completedToday = recentSessions.filter(s => {
+    const d = new Date(s.startedAt); d.setHours(0,0,0,0);
+    return d.getTime() === today.getTime();
+  }).length;
 
   return (
     <DashboardLayout>
@@ -86,28 +93,57 @@ export default async function StudentDashboard() {
         <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>Theo dõi bài tập, lịch sử luyện nói và tiến độ của bạn tại một nơi.</p>
       </div>
 
-      <div style={{
-        background: '#FFFFFF',
-        border: '1px solid #D1D5DB', borderRadius: 8,
-        padding: '22px 24px', marginBottom: 28,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap',
-        boxShadow: 'var(--shadow-card)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Mic size={20} style={{ color: 'var(--primary)' }} />
+      <section className="student-focus-hero">
+        <div className="student-focus-main">
+          <div className="student-focus-badge">
+            <Sparkles size={14} />
+            Hôm nay nên luyện {practiceGoal} lượt nói
           </div>
-          <div>
-            <p style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 18, color: 'var(--text-primary)', marginBottom: 4 }}>Luyện nói tự do</p>
-            <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Chọn topic bất kỳ và bắt đầu ngay, không cần bài tập.</p>
+          <h2>
+            {nextAssignment ? `Tiếp tục bài: ${nextAssignment.title}` : 'Bắt đầu một phiên speaking mới'}
+          </h2>
+          <p>
+            {nextAssignment
+              ? `${nextAssignment.class.name} · ${nextAssignment.topic.title} · Level ${nextAssignment.topic.level}`
+              : 'Chọn topic bất kỳ, nói trực tiếp bằng micro và nhận transcript, sửa lỗi, điểm kỹ năng sau buổi luyện.'}
+          </p>
+          <div className="student-focus-actions">
+            <Link href={nextAssignment ? `/student/assignments/${nextAssignment.id}/practice` : '/demo'} style={{ textDecoration: 'none' }}>
+              <button className="btn-primary" id="quick-practice-btn" style={{ padding: '13px 22px', fontSize: 14 }}>
+                <Mic size={16} /> {nextAssignment ? 'Làm bài được giao' : 'Luyện ngay'}
+              </button>
+            </Link>
+            <Link href="/student/progress" style={{ textDecoration: 'none' }}>
+              <button className="btn-secondary" style={{ padding: '13px 18px', fontSize: 14 }}>
+                <BarChart3 size={16} /> Xem tiến bộ
+              </button>
+            </Link>
           </div>
         </div>
-        <Link href="/demo" style={{ textDecoration: 'none' }}>
-          <button className="btn-primary" id="quick-practice-btn" style={{ padding: '12px 24px', fontSize: 14, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Mic size={16} /> Luyện ngay
-          </button>
-        </Link>
-      </div>
+        <div className="student-focus-panel" aria-label="Lộ trình luyện nói hôm nay">
+          <div className="student-focus-step is-active">
+            <Target size={16} />
+            <div>
+              <strong>Mục tiêu</strong>
+              <span>{completedToday}/{practiceGoal} lượt nói hôm nay</span>
+            </div>
+          </div>
+          <div className="student-focus-step">
+            <MessageSquareText size={16} />
+            <div>
+              <strong>Feedback gần nhất</strong>
+              <span>{latestCompleted?.score !== null && latestCompleted?.score !== undefined ? `Điểm ${latestCompleted.score} · ${latestCompleted.topic.title}` : 'Chưa có buổi được chấm'}</span>
+            </div>
+          </div>
+          <div className="student-focus-step">
+            <Flame size={16} />
+            <div>
+              <strong>Streak</strong>
+              <span>{streak > 0 ? `${streak} ngày liên tiếp` : 'Luyện hôm nay để bắt đầu streak'}</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div style={{ marginBottom: 32 }}>
         <StudentJoinClassForm />

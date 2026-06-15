@@ -393,13 +393,7 @@ function MessageBubble({ message }: { message: Message }) {
 
 function VocabularyPanel({ topic, words }: { topic: Topic | null; words: string[] }) {
   return (
-    <aside className="glass-card" style={{
-      padding: 16,
-      position: 'sticky',
-      top: 92,
-      maxHeight: 'calc(100vh - 220px)',
-      overflowY: 'auto',
-    }}>
+    <aside className="glass-card practice-side-panel">
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <BookOpen size={16} style={{ color: 'var(--primary-light)' }} />
         <div>
@@ -438,6 +432,65 @@ function VocabularyPanel({ topic, words }: { topic: Topic | null; words: string[
         </p>
       </div>
     </aside>
+  );
+}
+
+function MissionPanel({
+  topic,
+  assignmentBrief,
+  conversationProgress,
+  sessionTime,
+}: {
+  topic: Topic | null;
+  assignmentBrief: AssignmentBrief | null;
+  conversationProgress: { userMessages: number; minMessages: number; maxUserMessages: number; shouldFinish?: boolean } | null;
+  sessionTime: number;
+}) {
+  const minDuration = assignmentBrief?.minDurationSec ?? 180;
+  const targetMessages = conversationProgress?.minMessages ?? assignmentBrief?.minMessages ?? 4;
+  const userMessages = conversationProgress?.userMessages ?? 0;
+  const messagePct = Math.min(100, Math.round((userMessages / targetMessages) * 100));
+  const timePct = Math.min(100, Math.round((sessionTime / minDuration) * 100));
+
+  return (
+    <section className="glass-card practice-mission-panel">
+      <div className="practice-mission-header">
+        <div>
+          <p>Speaking mission</p>
+          <h2>{assignmentBrief?.title ?? topic?.title ?? 'Free speaking practice'}</h2>
+          <span>{assignmentBrief?.className ?? (topic ? `Level ${topic.level}` : 'AI speaking room')}</span>
+        </div>
+        <div className="practice-mission-topic" aria-hidden="true">{topic?.icon ?? '🎙️'}</div>
+      </div>
+
+      <div className="practice-mission-grid">
+        <ProgressMini label="Lượt nói" value={`${userMessages}/${targetMessages}`} pct={messagePct} color={conversationProgress?.shouldFinish ? '#16A34A' : 'var(--primary)'} />
+        <ProgressMini label="Thời gian" value={`${Math.floor(sessionTime / 60)}:${String(sessionTime % 60).padStart(2, '0')}`} pct={timePct} color="#0F766E" />
+      </div>
+
+      <div className="practice-coach-note">
+        <Target size={16} />
+        <p>
+          {conversationProgress?.shouldFinish
+            ? 'Bạn đã đủ điều kiện. Kết thúc buổi để nhận điểm và feedback.'
+            : 'Nói thành câu đầy đủ, bám sát tình huống, rồi xem lại transcript trước khi gửi.'}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function ProgressMini({ label, value, pct, color }: { label: string; value: string; pct: number; color: string }) {
+  return (
+    <div className="practice-progress-mini">
+      <div>
+        <span>{label}</span>
+        <strong>{value}</strong>
+      </div>
+      <div className="practice-progress-track">
+        <span style={{ width: `${pct}%`, background: color }} />
+      </div>
+    </div>
   );
 }
 
@@ -1366,16 +1419,15 @@ export default function DemoClient() {
             width: '100%',
             margin: '0 auto',
           }}>
-            <div style={{
-              maxWidth: 1120,
-              margin: '0 auto',
-              display: 'grid',
-              gridTemplateColumns: '260px minmax(0, 800px)',
-              gap: 20,
-              alignItems: 'start',
-            }}>
+            <div className="practice-room-grid">
             <VocabularyPanel topic={selectedTopic} words={vocabularySuggestions} />
             <main style={{ minWidth: 0 }}>
+            <MissionPanel
+              topic={selectedTopic}
+              assignmentBrief={assignmentBrief}
+              conversationProgress={conversationProgress}
+              sessionTime={sessionTime}
+            />
             {assignmentBrief && (
               <div className="glass-card" style={{ padding: 16, marginBottom: 16, borderColor: '#BBF7D0' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
