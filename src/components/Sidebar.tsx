@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   Mic, LayoutDashboard, BookOpen, History, TrendingUp,
   Users, School, ClipboardList, Settings,
-  LogOut, ChevronRight, Shield, BarChart2, CreditCard,
+  LogOut, ChevronRight, Shield, BarChart2, CreditCard, CircleHelp,
 } from 'lucide-react';
 
 type NavItem = { label: string; href: string; icon: React.ElementType };
@@ -17,6 +17,7 @@ const STUDENT_NAV: NavItem[] = [
   { label: 'Bài tập', href: '/student/assignments', icon: ClipboardList },
   { label: 'Lịch sử', href: '/student/sessions', icon: History },
   { label: 'Tiến độ', href: '/student/progress', icon: TrendingUp },
+  { label: 'Hướng dẫn', href: '/student/help', icon: CircleHelp },
   { label: 'Gói của tôi', href: '/account', icon: CreditCard },
 ];
 
@@ -26,6 +27,7 @@ const TEACHER_NAV: NavItem[] = [
   { label: 'Bài tập', href: '/teacher/assignments', icon: ClipboardList },
   { label: 'Hội thoại AI', href: '/teacher/topics', icon: Mic },
   { label: 'Học viên', href: '/teacher/students', icon: Users },
+  { label: 'Hướng dẫn', href: '/teacher/help', icon: CircleHelp },
   { label: 'Gói của tôi', href: '/account', icon: CreditCard },
 ];
 
