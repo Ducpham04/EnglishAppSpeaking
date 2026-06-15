@@ -1,7 +1,27 @@
 'use client';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { Mic, Brain, Volume2, ChevronRight, Zap, Shield, Trophy, Star, ArrowRight, CheckCircle2 } from 'lucide-react';
+import {
+  Mic,
+  Brain,
+  Volume2,
+  ChevronRight,
+  Zap,
+  Shield,
+  Trophy,
+  Star,
+  ArrowRight,
+  CheckCircle2,
+  Headphones,
+  MessageSquareText,
+  Gauge,
+  GraduationCap,
+  ClipboardCheck,
+  Sparkles,
+  Users,
+  BookOpenCheck,
+  Radio,
+} from 'lucide-react';
 
 const FEATURES = [
   {
@@ -79,19 +99,110 @@ const LEVELS = [
 ];
 
 const TRUST_POINTS = [
-  'Không cần cài app',
-  'Có phản hồi từng câu',
-  'Theo CEFR A1-C2',
+  'Luyện nói bằng micro',
+  'AI sửa lỗi từng câu',
+  'Giáo viên theo dõi tiến bộ',
 ];
 
 const TOPICS_PREVIEW = [
-  { emoji: '👋', title: 'Self Introduction', level: 'A1' },
-  { emoji: '🍜', title: 'Ordering Food', level: 'A2' },
-  { emoji: '✈️', title: 'Travel Plans', level: 'B1' },
-  { emoji: '💼', title: 'Job Interview', level: 'B2' },
-  { emoji: '🤖', title: 'Technology & AI', level: 'C1' },
-  { emoji: '⚖️', title: 'Ethical Dilemmas', level: 'C1' },
+  { icon: GraduationCap, title: 'Self Introduction', level: 'A1', cue: 'I am from...' },
+  { icon: MessageSquareText, title: 'Ordering Food', level: 'A2', cue: 'Could I have...' },
+  { icon: Radio, title: 'Travel Plans', level: 'B1', cue: 'I would like to...' },
+  { icon: ClipboardCheck, title: 'Job Interview', level: 'B2', cue: 'My strength is...' },
+  { icon: Brain, title: 'Technology & AI', level: 'C1', cue: 'From my perspective...' },
+  { icon: BookOpenCheck, title: 'Ethical Dilemmas', level: 'C1', cue: 'The trade-off is...' },
 ];
+
+const PRACTICE_SIGNALS = [
+  { icon: Headphones, label: 'Listen', value: 'AI hỏi bằng giọng nói' },
+  { icon: Mic, label: 'Speak', value: 'Học viên trả lời trực tiếp' },
+  { icon: Gauge, label: 'Improve', value: 'Nhận điểm và lỗi cần sửa' },
+];
+
+const AUDIENCE_BLOCKS = [
+  {
+    icon: GraduationCap,
+    title: 'Cho học viên',
+    description: 'Vào phòng luyện, chọn chủ đề hoặc bài được giao, nói thành câu và nhận phản hồi đủ ngắn để sửa ngay trong lượt tiếp theo.',
+    points: ['Transcript sau mỗi lượt nói', 'Gợi ý câu tự nhiên hơn', 'Điểm fluency, grammar, vocabulary'],
+  },
+  {
+    icon: Users,
+    title: 'Cho giáo viên',
+    description: 'Giao bài speaking theo lớp, xem ai đã luyện, ai cần luyện lại, và dùng mistake bank để tạo bài sửa lỗi cá nhân.',
+    points: ['Theo dõi tiến độ từng học viên', 'Xem lỗi lặp lại nổi bật', 'Tạo bài luyện lại từ dữ liệu thật'],
+  },
+];
+
+function AudioBars() {
+  return (
+    <div className="audio-bars" aria-hidden="true">
+      {Array.from({ length: 18 }).map((_, index) => (
+        <span key={index} style={{ animationDelay: `${index * 0.055}s` }} />
+      ))}
+    </div>
+  );
+}
+
+function PracticePreview() {
+  return (
+    <div className="practice-preview" aria-label="Mô phỏng phòng luyện nói">
+      <div className="practice-preview-top">
+        <div>
+          <p className="preview-eyebrow">Live speaking room</p>
+          <h2>Job Interview · B2</h2>
+        </div>
+        <div className="live-pill">
+          <span />
+          Đang nghe
+        </div>
+      </div>
+
+      <div className="voice-stage">
+        <div className="voice-orb">
+          <Mic size={30} />
+        </div>
+        <AudioBars />
+        <p>Student is speaking...</p>
+      </div>
+
+      <div className="transcript-panel">
+        <div className="panel-label-row">
+          <span>Transcript</span>
+          <span>00:34</span>
+        </div>
+        <p>I have working in a software company for three years, and I usually build tools for teachers.</p>
+      </div>
+
+      <div className="coach-panel">
+        <div className="coach-avatar">
+          <Sparkles size={18} />
+        </div>
+        <div>
+          <p className="coach-title">AI coach feedback</p>
+          <p className="coach-copy">
+            Say: <strong>I have been working</strong>. Use present perfect continuous for experience that started in the past and continues now.
+          </p>
+        </div>
+      </div>
+
+      <div className="score-grid" aria-label="Điểm kỹ năng">
+        <div>
+          <span>Fluency</span>
+          <strong>82</strong>
+        </div>
+        <div>
+          <span>Grammar</span>
+          <strong>76</strong>
+        </div>
+        <div>
+          <span>Vocabulary</span>
+          <strong>88</strong>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LandingPage() {
   return (
@@ -132,151 +243,116 @@ export default function LandingPage() {
       <main id="main-content">
       <section className="landing-hero" style={{
         position: 'relative', zIndex: 1,
-        paddingTop: 132, paddingBottom: 76,
-        textAlign: 'center',
-        padding: '132px 24px 76px',
+        paddingTop: 126, paddingBottom: 64,
+        padding: '126px 24px 64px',
       }}>
-        <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          {/* Badge */}
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '6px 16px',
-            background: '#EFF6FF',
-            border: '1px solid #BFDBFE',
-            borderRadius: 100,
-            marginBottom: 28,
-          }}>
-            <Star size={13} style={{ color: '#F59E0B' }} fill="#F59E0B" />
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
-              AI-Powered English Speaking Practice
-            </span>
+        <div className="hero-grid">
+          <div className="hero-copy">
+            <div className="hero-badge">
+              <Star size={13} style={{ color: '#F59E0B' }} fill="#F59E0B" />
+              <span>AI speaking coach cho lớp học và tự luyện</span>
+            </div>
+
+            <h1>
+              Biến mỗi lượt nói thành buổi luyện có phản hồi thật
+            </h1>
+
+            <p className="hero-subcopy">
+              GB Speaking AI cho học viên nói trực tiếp bằng micro, nghe AI hỏi lại,
+              nhận transcript, sửa lỗi và điểm kỹ năng sau từng buổi. Giáo viên có
+              dữ liệu rõ để giao bài và theo dõi tiến bộ.
+            </p>
+
+            <div className="landing-cta-row" style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <Link href="/demo" style={{ textDecoration: 'none' }}>
+                <button className="btn-primary landing-cta-main" id="hero-cta-btn" style={{ padding: '16px 28px', fontSize: 16 }}>
+                  <Mic size={18} />
+                  Vào phòng luyện nói
+                </button>
+              </Link>
+              <Link href="#how-it-works" style={{ textDecoration: 'none' }}>
+                <button className="btn-secondary landing-cta-secondary" id="hero-learn-btn" style={{ padding: '16px 24px', fontSize: 16 }}>
+                  Xem cách hoạt động
+                  <ChevronRight size={16} />
+                </button>
+              </Link>
+            </div>
+
+            <div className="trust-row" aria-label="Điểm nổi bật">
+              {TRUST_POINTS.map(point => (
+                <span key={point} className="trust-item">
+                  <CheckCircle2 size={15} aria-hidden="true" />
+                  {point}
+                </span>
+              ))}
+            </div>
+
+            <div className="practice-signal-row" aria-label="Luồng luyện nói">
+              {PRACTICE_SIGNALS.map(signal => (
+                <div key={signal.label} className="practice-signal">
+                  <signal.icon size={18} />
+                  <div>
+                    <strong>{signal.label}</strong>
+                    <span>{signal.value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Headline */}
-          <h1 style={{
-            fontFamily: 'Outfit, sans-serif',
-            fontSize: 'clamp(40px, 7vw, 64px)',
-            fontWeight: 800,
-            lineHeight: 1.1,
-            marginBottom: 24,
-            color: 'var(--text-primary)',
-          }}>
-            Luyện nói tiếng Anh{' '}
-            <span className="gradient-text">thông minh</span>
-            {' '}cùng AI
-          </h1>
-
-          {/* Sub */}
-          <p style={{
-            fontSize: 'clamp(16px, 2.5vw, 20px)',
-            color: 'var(--text-secondary)',
-            lineHeight: 1.7,
-            marginBottom: 48,
-            maxWidth: 600,
-            margin: '0 auto 48px',
-          }}>
-            Nói chuyện với AI, nhận phản hồi tức thì, sửa lỗi ngữ pháp từng câu.
-            Phù hợp mọi trình độ từ A1 đến C2. Bắt đầu miễn phí ngay.
-          </p>
-
-          {/* CTA Buttons */}
-          <div className="landing-cta-row" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/demo" style={{ textDecoration: 'none' }}>
-              <button className="btn-primary landing-cta-main" id="hero-cta-btn" style={{ padding: '16px 36px', fontSize: 16 }}>
-                <Mic size={18} />
-                Bắt đầu luyện nói ngay
-              </button>
-            </Link>
-            <Link href="#how-it-works" style={{ textDecoration: 'none' }}>
-              <button className="btn-secondary landing-cta-secondary" id="hero-learn-btn" style={{ padding: '16px 36px', fontSize: 16 }}>
-                Tìm hiểu thêm
-                <ChevronRight size={16} />
-              </button>
-            </Link>
-          </div>
-
-          <div className="trust-row" aria-label="Điểm nổi bật">
-            {TRUST_POINTS.map(point => (
-              <span key={point} className="trust-item">
-                <CheckCircle2 size={15} aria-hidden="true" />
-                {point}
-              </span>
-            ))}
-          </div>
-
-          {/* Level chips */}
-          <div className="level-chip-row" aria-label="Các cấp độ CEFR được hỗ trợ" style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 44 }}>
-            {LEVELS.map(lvl => (
-              <div key={lvl.code} style={{
-                padding: '6px 14px',
-                borderRadius: 8,
-                border: `1px solid ${lvl.color}40`,
-                background: `${lvl.color}12`,
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: lvl.color }}>{lvl.code}</span>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{lvl.label}</span>
-              </div>
-            ))}
-          </div>
+          <PracticePreview />
         </div>
 
-        {/* Demo Preview Card */}
-        <div style={{
-          maxWidth: 700, margin: '56px auto 0',
-          position: 'relative',
-        }}>
-          <div className="glass-card" style={{ padding: 24, textAlign: 'left' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: '50%',
-                background: '#EFF6FF',
-                border: '1px solid #BFDBFE',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Mic size={18} color="var(--primary)" />
-              </div>
-              <div>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 2 }}>AI Speaking Partner</p>
-                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Topic: Job Interview · Level B2</p>
-              </div>
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444' }} />
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B' }} />
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
-              </div>
+        <div className="level-chip-row" aria-label="Các cấp độ CEFR được hỗ trợ">
+          {LEVELS.map(lvl => (
+            <div key={lvl.code} style={{
+              padding: '6px 14px',
+              borderRadius: 8,
+              border: `1px solid ${lvl.color}40`,
+              background: `${lvl.color}12`,
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: lvl.color }}>{lvl.code}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{lvl.label}</span>
             </div>
+          ))}
+        </div>
+      </section>
 
-            {/* Mock conversation */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div className="message-ai" style={{ padding: '12px 16px', maxWidth: '85%' }}>
-                <p style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.6 }}>
-                  Thank you for coming in today! Could you tell me a little about yourself and your work experience?
-                </p>
-              </div>
-              <div className="message-user" style={{ padding: '12px 16px', maxWidth: '85%', alignSelf: 'flex-end' }}>
-                <p style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.6 }}>
-                  I have working in software company for 3 years as a developer.
-                </p>
-              </div>
-              <div className="message-ai" style={{ padding: '12px 16px', maxWidth: '85%' }}>
-                <p style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 10 }}>
-                  That&apos;s great experience! Three years is a solid foundation in software development.
-                </p>
-                <div className="correction-card" style={{ marginTop: 8 }}>
-                  <p style={{ fontSize: 12, color: '#92400E', fontWeight: 600, marginBottom: 4 }}>Correction</p>
-                  <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                    <span style={{ color: '#EF4444', textDecoration: 'line-through' }}>&quot;I have working&quot;</span>
-                    {' → '}
-                    <span style={{ color: '#10B981', fontWeight: 600 }}>&quot;I have been working&quot;</span>
-                  </p>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Use present perfect continuous for ongoing actions.</p>
-                </div>
-                <p style={{ fontSize: 14, color: 'var(--accent-light)', marginTop: 10 }}>
-                  What kind of projects have you worked on during those 3 years?
-                </p>
-              </div>
+      {/* ===== SPEAKING WORKFLOW ===== */}
+      <section aria-labelledby="workflow-heading" style={{ position: 'relative', zIndex: 1, padding: '56px 24px 72px', background: '#FFFFFF' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div className="section-heading-split">
+            <div>
+              <p className="section-kicker">Thông điệp chính</p>
+              <h2 id="workflow-heading">
+                Không chỉ chat với AI. Đây là phòng luyện speaking có chấm, có sửa, có lộ trình.
+              </h2>
             </div>
+            <p>
+              Website tập trung vào hành vi quan trọng nhất: học viên phải nói ra miệng,
+              được nghe lại cách diễn đạt tốt hơn, rồi luyện tiếp trong cùng một ngữ cảnh.
+            </p>
+          </div>
+
+          <div className="audience-grid">
+            {AUDIENCE_BLOCKS.map(block => (
+              <div key={block.title} className="audience-card">
+                <div className="audience-icon">
+                  <block.icon size={24} />
+                </div>
+                <h3>{block.title}</h3>
+                <p>{block.description}</p>
+                <ul>
+                  {block.points.map(point => (
+                    <li key={point}>
+                      <CheckCircle2 size={15} />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -389,8 +465,11 @@ export default function LandingPage() {
           }}>
             {TOPICS_PREVIEW.map((t, i) => (
               <div key={i} className="glass-card glass-card-hover" style={{ padding: '20px', textAlign: 'center' }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>{t.emoji}</div>
+                <div className="topic-icon">
+                  <t.icon size={24} />
+                </div>
                 <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 8 }}>{t.title}</p>
+                <p style={{ minHeight: 18, fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>{t.cue}</p>
                 <span className={`level-${t.level}`} style={{
                   fontSize: 11, fontWeight: 700, padding: '3px 8px',
                   borderRadius: 6, border: '1px solid',
