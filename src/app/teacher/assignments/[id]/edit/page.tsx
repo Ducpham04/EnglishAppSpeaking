@@ -214,12 +214,12 @@ export default function EditAssignmentPage() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>Tối thiểu (phút)</label>
-                  <input type="number" min={1} max={60} value={minDuration} onChange={e => setMinDuration(Number(e.target.value))}
+                  <input type="number" min={1} max={30} value={minDuration} onChange={e => setMinDuration(Number(e.target.value))}
                     style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>Tối thiểu (lượt nói)</label>
-                  <input type="number" min={1} max={50} value={minMessages} onChange={e => setMinMessages(Number(e.target.value))}
+                  <input type="number" min={2} max={20} value={minMessages} onChange={e => setMinMessages(Number(e.target.value))}
                     style={{ width: '100%', padding: '12px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>

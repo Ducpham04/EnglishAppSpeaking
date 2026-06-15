@@ -39,9 +39,9 @@ const ADMIN_NAV: NavItem[] = [
 ];
 
 const ROLE_COLOR: Record<string, string> = {
-  admin: '#EF4444',
-  teacher: '#F59E0B',
-  student: '#10B981',
+  admin: '#DC2626',
+  teacher: '#2563EB',
+  student: '#0F766E',
 };
 
 const ROLE_LABEL: Record<string, string> = {
@@ -63,35 +63,39 @@ export default function Sidebar() {
   const roleColor = ROLE_COLOR[role] || '#7C3AED';
 
   return (
-    <aside style={{
-      width: 240, minHeight: '100vh', flexShrink: 0,
-      background: 'rgba(10,10,20,0.95)',
-      borderRight: '1px solid rgba(255,255,255,0.06)',
+    <aside className="app-sidebar" style={{
+      width: 260, minHeight: '100vh', flexShrink: 0,
+      background: '#FFFFFF',
+      borderRight: '1px solid #E5E7EB',
       display: 'flex', flexDirection: 'column',
       position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 40,
     }}>
       {/* Logo */}
-      <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="sidebar-logo" style={{ padding: '22px 20px 18px', borderBottom: '1px solid #E5E7EB' }}>
         <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: 'var(--gradient-primary)',
+            width: 36, height: 36, borderRadius: 8,
+            background: '#EFF6FF',
+            border: '1px solid #BFDBFE',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Mic size={16} color="white" />
+            <Mic size={17} color="var(--primary)" />
           </div>
-          <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)' }}>
-            GB Speaking<span style={{ color: 'var(--primary-light)' }}> AI</span>
-          </span>
+          <div>
+            <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>
+              GB Speaking AI
+            </span>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>Speaking practice workspace</p>
+          </div>
         </Link>
       </div>
 
       {/* User info */}
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="sidebar-user" style={{ padding: '16px 20px', borderBottom: '1px solid #E5E7EB' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: `${roleColor}20`, border: `2px solid ${roleColor}40`,
+            width: 38, height: 38, borderRadius: 8,
+            background: `${roleColor}12`, border: `1px solid ${roleColor}30`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 14, fontWeight: 700, color: roleColor,
           }}>
@@ -103,7 +107,7 @@ export default function Sidebar() {
             </p>
             <span style={{
               fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
-              background: `${roleColor}15`, color: roleColor, border: `1px solid ${roleColor}25`,
+              background: `${roleColor}10`, color: roleColor, border: `1px solid ${roleColor}25`,
             }}>
               {role === 'admin' && <Shield size={9} style={{ marginRight: 3, verticalAlign: 'middle' }} />}
               {ROLE_LABEL[role]}
@@ -113,25 +117,25 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: '12px 12px' }}>
-        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, paddingLeft: 8 }}>
-          Menu
+      <nav className="sidebar-nav" aria-label="Điều hướng workspace" style={{ flex: 1, padding: '12px 12px' }}>
+        <p className="sidebar-section-label" style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8, paddingLeft: 8 }}>
+          Workspace
         </p>
         {navItems.map(item => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
-            <Link key={item.href} href={item.href} style={{ textDecoration: 'none', display: 'block', marginBottom: 2 }}>
-              <div style={{
+            <Link key={item.href} href={item.href} aria-current={isActive ? 'page' : undefined} style={{ textDecoration: 'none', display: 'block', marginBottom: 2 }}>
+              <div className="sidebar-nav-item" style={{
                 display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 12px', borderRadius: 10,
-                background: isActive ? `${roleColor}15` : 'transparent',
+                padding: '10px 12px', borderRadius: 8,
+                background: isActive ? `${roleColor}10` : 'transparent',
                 border: `1px solid ${isActive ? `${roleColor}25` : 'transparent'}`,
                 transition: 'all 0.15s ease',
                 cursor: 'pointer',
               }}>
                 <Icon size={16} style={{ color: isActive ? roleColor : 'var(--text-muted)', flexShrink: 0 }} />
-                <span style={{ fontSize: 14, fontWeight: isActive ? 600 : 400, color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                <span style={{ fontSize: 14, fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                   {item.label}
                 </span>
                 {isActive && <ChevronRight size={13} style={{ color: roleColor, marginLeft: 'auto' }} />}
@@ -141,31 +145,32 @@ export default function Sidebar() {
         })}
 
         {/* Demo link */}
-        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="sidebar-demo-link" style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #E5E7EB' }}>
           <Link href="/demo" style={{ textDecoration: 'none', display: 'block', marginBottom: 2 }}>
-            <div style={{
+            <div className="sidebar-nav-item" style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              padding: '10px 12px', borderRadius: 10, background: 'rgba(124,58,237,0.08)',
-              border: '1px solid rgba(124,58,237,0.15)', cursor: 'pointer',
+              padding: '10px 12px', borderRadius: 8, background: '#EFF6FF',
+              border: '1px solid #BFDBFE', cursor: 'pointer',
             }}>
-              <Mic size={16} style={{ color: 'var(--primary-light)' }} />
-              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--primary-light)' }}>Luyện nói AI</span>
+              <Mic size={16} style={{ color: 'var(--primary)' }} />
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)' }}>Luyện nói AI</span>
             </div>
           </Link>
         </div>
       </nav>
 
       {/* Logout */}
-      <div style={{ padding: '12px 12px 20px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="sidebar-logout" style={{ padding: '12px 12px 20px', borderTop: '1px solid #E5E7EB' }}>
         <button
+          aria-label="Đăng xuất khỏi tài khoản"
           onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 12px', borderRadius: 10,
-            background: 'transparent', border: '1px solid rgba(239,68,68,0.15)',
+            padding: '10px 12px', borderRadius: 8,
+            background: 'transparent', border: '1px solid #FECACA',
             cursor: 'pointer', transition: 'all 0.15s ease',
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+          onMouseEnter={e => (e.currentTarget.style.background = '#FEF2F2')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
           <LogOut size={15} style={{ color: '#EF4444' }} />

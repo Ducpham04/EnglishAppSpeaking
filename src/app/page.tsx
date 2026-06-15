@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { Mic, Brain, Volume2, ChevronRight, Zap, Shield, Trophy, Star, ArrowRight } from 'lucide-react';
+import { Mic, Brain, Volume2, ChevronRight, Zap, Shield, Trophy, Star, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 const FEATURES = [
   {
@@ -78,6 +78,12 @@ const LEVELS = [
   { code: 'C2', label: 'Mastery', color: '#EC4899' },
 ];
 
+const TRUST_POINTS = [
+  'Không cần cài app',
+  'Có phản hồi từng câu',
+  'Theo CEFR A1-C2',
+];
+
 const TOPICS_PREVIEW = [
   { emoji: '👋', title: 'Self Introduction', level: 'A1' },
   { emoji: '🍜', title: 'Ordering Food', level: 'A2' },
@@ -89,29 +95,30 @@ const TOPICS_PREVIEW = [
 
 export default function LandingPage() {
   return (
-    <div style={{ background: 'var(--bg-base)', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
-      {/* Background gradient orbs */}
+    <div className="landing-page" style={{ background: 'var(--bg-base)', minHeight: '100vh', position: 'relative', zIndex: 1 }}>
+      <a href="#main-content" className="skip-link">Bỏ qua menu</a>
       <div style={{
         position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
         background: 'var(--gradient-hero)',
       }} />
 
       {/* ===== NAVBAR ===== */}
-      <nav style={{
+      <nav aria-label="Điều hướng chính" className="landing-nav" style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
         padding: '16px 24px',
-        background: 'rgba(10, 10, 20, 0.8)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        background: 'rgba(255, 255, 255, 0.92)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid #E5E7EB',
       }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="landing-nav-inner" style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'var(--gradient-primary)',
+              width: 36, height: 36, borderRadius: 8,
+              background: '#EFF6FF',
+              border: '1px solid #BFDBFE',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Mic size={18} color="white" />
+              <Mic size={18} color="var(--primary)" />
             </div>
             <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 20, color: 'var(--text-primary)' }}>
               GB Speaking <span style={{ color: 'var(--primary-light)' }}>AI</span>
@@ -122,21 +129,22 @@ export default function LandingPage() {
       </nav>
 
       {/* ===== HERO SECTION ===== */}
-      <section style={{
+      <main id="main-content">
+      <section className="landing-hero" style={{
         position: 'relative', zIndex: 1,
-        paddingTop: 140, paddingBottom: 100,
+        paddingTop: 132, paddingBottom: 76,
         textAlign: 'center',
-        padding: '140px 24px 100px',
+        padding: '132px 24px 76px',
       }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           {/* Badge */}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '6px 16px',
-            background: 'rgba(124, 58, 237, 0.12)',
-            border: '1px solid rgba(124, 58, 237, 0.3)',
+            background: '#EFF6FF',
+            border: '1px solid #BFDBFE',
             borderRadius: 100,
-            marginBottom: 32,
+            marginBottom: 28,
           }}>
             <Star size={13} style={{ color: '#F59E0B' }} fill="#F59E0B" />
             <span style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}>
@@ -147,7 +155,7 @@ export default function LandingPage() {
           {/* Headline */}
           <h1 style={{
             fontFamily: 'Outfit, sans-serif',
-            fontSize: 'clamp(40px, 8vw, 72px)',
+            fontSize: 'clamp(40px, 7vw, 64px)',
             fontWeight: 800,
             lineHeight: 1.1,
             marginBottom: 24,
@@ -172,23 +180,32 @@ export default function LandingPage() {
           </p>
 
           {/* CTA Buttons */}
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div className="landing-cta-row" style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link href="/demo" style={{ textDecoration: 'none' }}>
-              <button className="btn-primary" id="hero-cta-btn" style={{ padding: '16px 36px', fontSize: 16 }}>
+              <button className="btn-primary landing-cta-main" id="hero-cta-btn" style={{ padding: '16px 36px', fontSize: 16 }}>
                 <Mic size={18} />
                 Bắt đầu luyện nói ngay
               </button>
             </Link>
             <Link href="#how-it-works" style={{ textDecoration: 'none' }}>
-              <button className="btn-secondary" id="hero-learn-btn" style={{ padding: '16px 36px', fontSize: 16 }}>
+              <button className="btn-secondary landing-cta-secondary" id="hero-learn-btn" style={{ padding: '16px 36px', fontSize: 16 }}>
                 Tìm hiểu thêm
                 <ChevronRight size={16} />
               </button>
             </Link>
           </div>
 
+          <div className="trust-row" aria-label="Điểm nổi bật">
+            {TRUST_POINTS.map(point => (
+              <span key={point} className="trust-item">
+                <CheckCircle2 size={15} aria-hidden="true" />
+                {point}
+              </span>
+            ))}
+          </div>
+
           {/* Level chips */}
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 56 }}>
+          <div className="level-chip-row" aria-label="Các cấp độ CEFR được hỗ trợ" style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 44 }}>
             {LEVELS.map(lvl => (
               <div key={lvl.code} style={{
                 padding: '6px 14px',
@@ -206,17 +223,18 @@ export default function LandingPage() {
 
         {/* Demo Preview Card */}
         <div style={{
-          maxWidth: 700, margin: '64px auto 0',
+          maxWidth: 700, margin: '56px auto 0',
           position: 'relative',
         }}>
           <div className="glass-card" style={{ padding: 24, textAlign: 'left' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               <div style={{
                 width: 40, height: 40, borderRadius: '50%',
-                background: 'var(--gradient-primary)',
+                background: '#EFF6FF',
+                border: '1px solid #BFDBFE',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <Mic size={18} color="white" />
+                <Mic size={18} color="var(--primary)" />
               </div>
               <div>
                 <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 2 }}>AI Speaking Partner</p>
@@ -246,7 +264,7 @@ export default function LandingPage() {
                   That&apos;s great experience! Three years is a solid foundation in software development.
                 </p>
                 <div className="correction-card" style={{ marginTop: 8 }}>
-                  <p style={{ fontSize: 12, color: '#F59E0B', fontWeight: 600, marginBottom: 4 }}>📝 Correction</p>
+                  <p style={{ fontSize: 12, color: '#92400E', fontWeight: 600, marginBottom: 4 }}>Correction</p>
                   <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
                     <span style={{ color: '#EF4444', textDecoration: 'line-through' }}>&quot;I have working&quot;</span>
                     {' → '}
@@ -264,10 +282,10 @@ export default function LandingPage() {
       </section>
 
       {/* ===== FEATURES SECTION ===== */}
-      <section style={{ position: 'relative', zIndex: 1, padding: '80px 24px' }}>
+      <section aria-labelledby="features-heading" style={{ position: 'relative', zIndex: 1, padding: '72px 24px', background: '#FFFFFF' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 60 }}>
-            <h2 style={{
+            <h2 id="features-heading" style={{
               fontFamily: 'Outfit, sans-serif', fontWeight: 800,
               fontSize: 'clamp(28px, 5vw, 44px)',
               color: 'var(--text-primary)', marginBottom: 16,
@@ -307,10 +325,10 @@ export default function LandingPage() {
       </section>
 
       {/* ===== HOW IT WORKS ===== */}
-      <section id="how-it-works" style={{ position: 'relative', zIndex: 1, padding: '80px 24px' }}>
+      <section id="how-it-works" aria-labelledby="how-heading" style={{ position: 'relative', zIndex: 1, padding: '72px 24px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 60 }}>
-            <h2 style={{
+            <h2 id="how-heading" style={{
               fontFamily: 'Outfit, sans-serif', fontWeight: 800,
               fontSize: 'clamp(28px, 5vw, 44px)',
               color: 'var(--text-primary)', marginBottom: 16,
@@ -320,14 +338,14 @@ export default function LandingPage() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             {STEPS.map((step, i) => (
-              <div key={i} className="glass-card" style={{
+              <div key={i} className="glass-card step-card" style={{
                 padding: '28px 32px',
                 display: 'flex', alignItems: 'flex-start', gap: 28,
               }}>
                 <div style={{
-                  minWidth: 56, height: 56, borderRadius: 16,
+                  minWidth: 56, height: 56, borderRadius: 8,
                   background: `${step.color}15`,
-                  border: `2px solid ${step.color}40`,
+                  border: `1px solid ${step.color}35`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: 18,
                   color: step.color,
@@ -349,10 +367,10 @@ export default function LandingPage() {
       </section>
 
       {/* ===== TOPICS PREVIEW ===== */}
-      <section style={{ position: 'relative', zIndex: 1, padding: '80px 24px' }}>
+      <section aria-labelledby="topics-heading" style={{ position: 'relative', zIndex: 1, padding: '72px 24px', background: '#FFFFFF' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <h2 style={{
+            <h2 id="topics-heading" style={{
               fontFamily: 'Outfit, sans-serif', fontWeight: 800,
               fontSize: 'clamp(28px, 5vw, 40px)',
               color: 'var(--text-primary)', marginBottom: 16,
@@ -395,15 +413,16 @@ export default function LandingPage() {
       </section>
 
       {/* ===== FINAL CTA ===== */}
-      <section style={{ position: 'relative', zIndex: 1, padding: '80px 24px 120px' }}>
-        <div style={{
+      <section aria-labelledby="final-cta-heading" style={{ position: 'relative', zIndex: 1, padding: '72px 24px 104px' }}>
+        <div className="final-cta-panel" style={{
           maxWidth: 700, margin: '0 auto', textAlign: 'center',
-          padding: '60px 40px',
-          background: 'linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(6,182,212,0.1) 100%)',
-          border: '1px solid rgba(124,58,237,0.25)',
-          borderRadius: 24,
+          padding: '52px 40px',
+          background: '#FFFFFF',
+          border: '1px solid #D1D5DB',
+          borderRadius: 8,
+          boxShadow: 'var(--shadow-card)',
         }}>
-          <h2 style={{
+          <h2 id="final-cta-heading" style={{
             fontFamily: 'Outfit, sans-serif', fontWeight: 800,
             fontSize: 'clamp(28px, 5vw, 40px)',
             color: 'var(--text-primary)', marginBottom: 16,
@@ -421,21 +440,24 @@ export default function LandingPage() {
           </Link>
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer style={{
         position: 'relative', zIndex: 1,
-        borderTop: '1px solid rgba(255,255,255,0.05)',
+        borderTop: '1px solid #E5E7EB',
         padding: '32px 24px',
         textAlign: 'center',
+        background: '#FFFFFF',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
           <div style={{
             width: 28, height: 28, borderRadius: 8,
-            background: 'var(--gradient-primary)',
+            background: '#EFF6FF',
+            border: '1px solid #BFDBFE',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Mic size={14} color="white" />
+            <Mic size={14} color="var(--primary)" />
           </div>
           <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)' }}>
             GB Speaking AI
@@ -458,7 +480,7 @@ function NavButtons() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Link href="/demo" style={{ textDecoration: 'none' }}>
-          <button className="btn-secondary" style={{ padding: '9px 16px', fontSize: 13 }}>🎙️ Demo</button>
+          <button className="btn-secondary" style={{ padding: '9px 16px', fontSize: 13 }}>Demo</button>
         </Link>
         <Link href={dashHref} style={{ textDecoration: 'none' }}>
           <button className="btn-primary" id="nav-dashboard-btn" style={{ padding: '9px 18px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>

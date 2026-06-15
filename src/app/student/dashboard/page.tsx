@@ -5,7 +5,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import StatsCard from '@/components/StatsCard';
 import StudentJoinClassForm from '@/components/StudentJoinClassForm';
 import Link from 'next/link';
-import { Mic, Clock, Star, Flame, CheckCircle, ChevronRight, BookOpen } from 'lucide-react';
+import { Mic, Clock, Star, Flame, CheckCircle, ChevronRight, BookOpen, ClipboardList, History, BarChart3 } from 'lucide-react';
 
 function formatDuration(sec: number) {
   const h = Math.floor(sec / 3600);
@@ -76,22 +76,31 @@ export default async function StudentDashboard() {
 
   return (
     <DashboardLayout>
-      <div style={{ marginBottom: 32 }}>
+      <div style={{ marginBottom: 28 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', marginBottom: 8 }}>
+          Student workspace
+        </p>
         <h1 style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: 28, color: 'var(--text-primary)', marginBottom: 6 }}>
-          Xin chào, {session.user.name}! 👋
+          Xin chào, {session.user.name}
         </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>Hôm nay bạn muốn luyện nói chủ đề gì?</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>Theo dõi bài tập, lịch sử luyện nói và tiến độ của bạn tại một nơi.</p>
       </div>
 
       <div style={{
-        background: 'linear-gradient(135deg, rgba(124,58,237,0.2) 0%, rgba(6,182,212,0.1) 100%)',
-        border: '1px solid rgba(124,58,237,0.25)', borderRadius: 16,
-        padding: '24px 28px', marginBottom: 32,
+        background: '#FFFFFF',
+        border: '1px solid #D1D5DB', borderRadius: 8,
+        padding: '22px 24px', marginBottom: 28,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap',
+        boxShadow: 'var(--shadow-card)',
       }}>
-        <div>
-          <p style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 18, color: 'var(--text-primary)', marginBottom: 4 }}>🎙️ Luyện nói tự do</p>
-          <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Chọn topic bất kỳ và bắt đầu ngay, không cần bài tập</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Mic size={20} style={{ color: 'var(--primary)' }} />
+          </div>
+          <div>
+            <p style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 18, color: 'var(--text-primary)', marginBottom: 4 }}>Luyện nói tự do</p>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Chọn topic bất kỳ và bắt đầu ngay, không cần bài tập.</p>
+          </div>
         </div>
         <Link href="/demo" style={{ textDecoration: 'none' }}>
           <button className="btn-primary" id="quick-practice-btn" style={{ padding: '12px 24px', fontSize: 14, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -104,32 +113,34 @@ export default async function StudentDashboard() {
         <StudentJoinClassForm />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 16, marginBottom: 32 }}>
-        <StatsCard icon={Mic} label="Tổng sessions" value={totalSessions} color="#7C3AED" />
-        <StatsCard icon={Clock} label="Tổng thời gian" value={formatDuration(totalDuration._sum.durationSec ?? 0)} color="#06B6D4" />
-        <StatsCard icon={Star} label="Điểm TB" value={avgScore._avg.score ? Math.round(avgScore._avg.score) : '—'} color="#F59E0B" />
-        <StatsCard icon={Flame} label="Streak" value={`${streak} ngày`} color="#EF4444" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 16, marginBottom: 28 }}>
+        <StatsCard icon={Mic} label="Tổng sessions" value={totalSessions} color="#2563EB" />
+        <StatsCard icon={Clock} label="Tổng thời gian" value={formatDuration(totalDuration._sum.durationSec ?? 0)} color="#0F766E" />
+        <StatsCard icon={Star} label="Điểm TB" value={avgScore._avg.score ? Math.round(avgScore._avg.score) : '—'} color="#D97706" />
+        <StatsCard icon={Flame} label="Streak" value={`${streak} ngày`} color="#DC2626" />
         <Link href="/student/classes" style={{ textDecoration: 'none' }}>
-          <StatsCard icon={BookOpen} label="Lớp học" value={enrollments} color="#10B981" />
+          <StatsCard icon={BookOpen} label="Lớp học" value={enrollments} color="#16A34A" />
         </Link>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
         <div className="glass-card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <h2 style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)' }}>📋 Bài tập chờ làm</h2>
+            <h2 style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ClipboardList size={17} style={{ color: 'var(--primary)' }} /> Bài tập chờ làm
+            </h2>
             <Link href="/student/assignments" style={{ textDecoration: 'none', fontSize: 12, color: 'var(--primary-light)' }}>Xem tất cả →</Link>
           </div>
           {pendingAssignments.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
               <CheckCircle size={32} style={{ color: '#10B981', display: 'block', margin: '0 auto 8px' }} />
-              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Đã hoàn thành tất cả! 🎉</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Đã hoàn thành tất cả.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {pendingAssignments.map(a => (
                 <Link key={a.id} href={`/student/assignments/${a.id}/practice`} style={{ textDecoration: 'none' }}>
-                  <div style={{ padding: '12px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ padding: '12px 14px', borderRadius: 8, background: '#F9FAFB', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: 22 }}>{a.topic.icon}</span>
                     <div style={{ flex: 1, overflow: 'hidden' }}>
                       <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.title}</p>
@@ -145,7 +156,9 @@ export default async function StudentDashboard() {
 
         <div className="glass-card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-            <h2 style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)' }}>🕐 Lịch sử luyện tập</h2>
+            <h2 style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <History size={17} style={{ color: 'var(--primary)' }} /> Lịch sử luyện tập
+            </h2>
             <Link href="/student/sessions" style={{ textDecoration: 'none', fontSize: 12, color: 'var(--primary-light)' }}>Xem tất cả →</Link>
           </div>
           {sessions.length === 0 ? (
@@ -157,7 +170,7 @@ export default async function StudentDashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {sessions.map(s => (
                 <Link key={s.id} href={`/student/sessions/${s.id}`} style={{ textDecoration: 'none' }}>
-                  <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ padding: '10px 12px', borderRadius: 8, background: '#F9FAFB', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: 20 }}>{s.topic.icon}</span>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>{s.topic.title}</p>
@@ -176,11 +189,13 @@ export default async function StudentDashboard() {
 
       <div className="glass-card" style={{ padding: '20px 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>📊 Tỉ lệ hoàn thành</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <BarChart3 size={17} style={{ color: 'var(--primary)' }} /> Tỉ lệ hoàn thành
+          </span>
           <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{completedSessions}/{totalSessions} sessions</span>
         </div>
-        <div style={{ height: 8, background: 'rgba(255,255,255,0.06)', borderRadius: 4, overflow: 'hidden' }}>
-          <div style={{ height: '100%', borderRadius: 4, width: `${totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0}%`, background: 'var(--gradient-primary)' }} />
+        <div style={{ height: 8, background: '#E5E7EB', borderRadius: 4, overflow: 'hidden' }}>
+          <div style={{ height: '100%', borderRadius: 4, width: `${totalSessions > 0 ? (completedSessions / totalSessions) * 100 : 0}%`, background: 'var(--primary)' }} />
         </div>
       </div>
     </DashboardLayout>

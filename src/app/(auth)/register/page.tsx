@@ -4,12 +4,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { Mic, Mail, Lock, User, Eye, EyeOff, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mic, Mail, Lock, User, Eye, EyeOff, Loader2, AlertCircle, CheckCircle, Phone } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +31,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!email.trim() && !phone.trim()) {
+      setError('Vui lòng nhập email hoặc số điện thoại');
+      return;
+    }
+
     if (password.length < 6) {
       setError('Mật khẩu phải có ít nhất 6 ký tự');
       return;
@@ -41,7 +47,7 @@ export default function RegisterPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, phone, password }),
       });
 
       const data = await res.json();
@@ -53,7 +59,8 @@ export default function RegisterPage() {
 
       // Auto sign in after register
       const signInResult = await signIn('credentials', {
-        email,
+        identifier: email.trim() || phone.trim(),
+        email: email.trim() || phone.trim(),
         password,
         redirect: false,
       });
@@ -154,7 +161,7 @@ export default function RegisterPage() {
               {/* Email */}
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>
-                  Email
+                  Email <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>(không bắt buộc nếu có số điện thoại)</span>
                 </label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -164,7 +171,35 @@ export default function RegisterPage() {
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    required
+                    autoComplete="email"
+                    style={{
+                      width: '100%', padding: '12px 14px 12px 42px',
+                      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 12, color: 'var(--text-primary)', fontSize: 14,
+                      outline: 'none', fontFamily: 'Inter, sans-serif',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={e => e.target.style.borderColor = 'var(--primary)'}
+                    onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                  />
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>
+                  Số điện thoại <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>(không bắt buộc nếu có email)</span>
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Phone size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input
+                    id="register-phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder="0912345678"
                     style={{
                       width: '100%', padding: '12px 14px 12px 42px',
                       background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',

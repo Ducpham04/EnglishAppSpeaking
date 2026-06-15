@@ -113,7 +113,7 @@ export default function AssignmentPracticePage() {
       <div style={{ maxWidth: 1080, margin: '0 auto' }}>
         <section className="glass-card" style={{ padding: '28px 30px', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18, flexWrap: 'wrap' }}>
-            <span style={{ width: 64, height: 64, borderRadius: 14, background: 'rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38 }}>
+            <span style={{ width: 64, height: 64, borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34 }}>
               {assignment.topic.icon}
             </span>
             <div style={{ flex: 1, minWidth: 260 }}>
@@ -155,8 +155,8 @@ export default function AssignmentPracticePage() {
                   'Nói đủ lượt và đủ thời gian yêu cầu',
                   'Câu trả lời rõ ràng, có liên kết',
                 ]).map(item => (
-                  <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: 12, borderRadius: 8, background: 'rgba(255,255,255,0.04)' }}>
-                    <CheckCircle2 size={15} style={{ color: '#10B981', flexShrink: 0, marginTop: 1 }} />
+                  <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: 12, borderRadius: 8, background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
+                    <CheckCircle2 size={15} style={{ color: '#16A34A', flexShrink: 0, marginTop: 1 }} />
                     <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item}</p>
                   </div>
                 ))}
@@ -174,9 +174,9 @@ export default function AssignmentPracticePage() {
               </div>
             </div>
 
-            <div className="glass-card" style={{ padding: 18, borderColor: 'rgba(245,158,11,0.22)' }}>
+            <div className="glass-card" style={{ padding: 18, borderColor: '#FDE68A', background: '#FFFBEB' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                <AlertCircle size={17} style={{ color: '#F59E0B', flexShrink: 0, marginTop: 1 }} />
+                <AlertCircle size={17} style={{ color: '#D97706', flexShrink: 0, marginTop: 1 }} />
                 <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.65 }}>
                   Hãy nói bằng tiếng Anh và bám sát tình huống. Nếu trả lời bằng tiếng Việt quá nhiều hoặc lệch chủ đề, điểm nhiệm vụ sẽ bị giảm mạnh.
                 </p>
@@ -203,7 +203,7 @@ export default function AssignmentPracticePage() {
 
 function BriefBlock({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ padding: 14, borderRadius: 10, background: 'rgba(255,255,255,0.04)' }}>
+    <div style={{ padding: 14, borderRadius: 8, background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
       <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 850, marginBottom: 5 }}>{label}</p>
       <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{value}</p>
     </div>
@@ -212,7 +212,7 @@ function BriefBlock({ label, value }: { label: string; value: string }) {
 
 function Metric({ icon: Icon, label, value, color }: { icon: ElementType; label: string; value: string; color: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: 12, borderRadius: 9, background: 'rgba(255,255,255,0.04)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: 12, borderRadius: 8, background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
       <div style={{ width: 34, height: 34, borderRadius: 8, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Icon size={16} style={{ color }} />
       </div>

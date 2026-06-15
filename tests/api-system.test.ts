@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 const state = vi.hoisted(() => ({
   authSession: null as null | { user: { id: string; role: string } },
   userFindUnique: vi.fn(),
+  userFindFirst: vi.fn(),
   userCreate: vi.fn(),
   planFindUnique: vi.fn(),
   subscriptionFindFirst: vi.fn(),
@@ -42,6 +43,7 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
       findUnique: state.userFindUnique,
+      findFirst: state.userFindFirst,
       create: state.userCreate,
     },
     plan: {
@@ -135,6 +137,7 @@ function classStudentParams(id: string, studentId: string) {
 beforeEach(() => {
   state.authSession = null;
   state.userFindUnique.mockReset();
+  state.userFindFirst.mockReset();
   state.userCreate.mockReset();
   state.planFindUnique.mockReset();
   state.subscriptionFindFirst.mockReset();
@@ -172,11 +175,12 @@ beforeEach(() => {
 
 describe('production API role and system flows', () => {
   it('registers new users as students and rejects duplicates', async () => {
-    state.userFindUnique.mockResolvedValueOnce(null);
+    state.userFindFirst.mockResolvedValueOnce(null);
     state.userCreate.mockImplementationOnce(async ({ data }) => ({
       id: 'user-new',
       name: data.name,
       email: data.email,
+      phone: data.phone,
       role: data.role,
       passwordHash: data.passwordHash,
     }));
@@ -193,12 +197,13 @@ describe('production API role and system flows', () => {
     expect(state.userCreate).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         email: 'new@example.com',
+        phone: null,
         role: 'student',
         passwordHash: expect.not.stringMatching(/^secret123$/),
       }),
     }));
 
-    state.userFindUnique.mockResolvedValueOnce({ id: 'existing' });
+    state.userFindFirst.mockResolvedValueOnce({ id: 'existing', email: 'new@example.com' });
     const duplicate = await registerRoute.POST(jsonRequest({
       name: 'New Student',
       email: 'new@example.com',
@@ -206,6 +211,35 @@ describe('production API role and system flows', () => {
     }));
 
     expect(duplicate.status).toBe(409);
+  });
+
+  it('registers students with phone number when email is unavailable', async () => {
+    state.userFindFirst.mockResolvedValueOnce(null);
+    state.userCreate.mockImplementationOnce(async ({ data }) => ({
+      id: 'user-phone',
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      role: data.role,
+      passwordHash: data.passwordHash,
+    }));
+
+    const created = await registerRoute.POST(jsonRequest({
+      name: 'Phone Student',
+      phone: '0912 345 678',
+      password: 'secret123',
+    }));
+    const createdJson = await created.json();
+
+    expect(created.status).toBe(201);
+    expect(createdJson.phone).toBe('0912345678');
+    expect(state.userCreate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        email: null,
+        phone: '0912345678',
+        role: 'student',
+      }),
+    }));
   });
 
   it('lets admins manually activate a teacher subscription', async () => {

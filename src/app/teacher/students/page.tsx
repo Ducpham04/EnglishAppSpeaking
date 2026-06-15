@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
-import { Users, TrendingUp, Award, Clock } from 'lucide-react';
+import { Users, TrendingUp, Award, Clock, ArrowRight } from 'lucide-react';
 
 export default async function TeacherStudentsPage() {
   const session = await auth();
@@ -100,8 +100,8 @@ export default async function TeacherStudentsPage() {
         <div className="glass-card" style={{ overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                {['Tên học viên', 'Lớp', 'Bài luyện', 'Điểm TB', 'Chủ đề gần đây', 'Hoạt động'].map(h => (
+              <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
+                {['Tên học viên', 'Lớp', 'Bài luyện', 'Điểm TB', 'Chủ đề gần đây', 'Hoạt động', ''].map(h => (
                   <th
                     key={h}
                     style={{
@@ -127,7 +127,7 @@ export default async function TeacherStudentsPage() {
                   style={{
                     borderBottom:
                       index < studentStats.length - 1
-                        ? '1px solid rgba(255,255,255,0.06)'
+                        ? '1px solid #F3F4F6'
                         : 'none',
                   }}
                 >
@@ -137,14 +137,15 @@ export default async function TeacherStudentsPage() {
                         style={{
                           width: 36,
                           height: 36,
-                          borderRadius: '50%',
-                          background: 'var(--gradient-primary)',
+                          borderRadius: 8,
+                          background: '#EFF6FF',
+                          border: '1px solid #BFDBFE',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontSize: 13,
                           fontWeight: 700,
-                          color: 'white',
+                          color: 'var(--primary)',
                         }}
                       >
                         {student.name[0]}
@@ -199,6 +200,11 @@ export default async function TeacherStudentsPage() {
                     ) : (
                       <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>—</span>
                     )}
+                  </td>
+                  <td style={{ padding: '14px 18px', textAlign: 'right' }}>
+                    <Link href={`/teacher/students/${student.id}`} style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--primary)', fontSize: 12, fontWeight: 800 }}>
+                      Hồ sơ <ArrowRight size={13} />
+                    </Link>
                   </td>
                 </tr>
               ))}

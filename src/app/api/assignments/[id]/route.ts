@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { parseJsonBody } from '@/lib/api-validation';
+import { z } from 'zod';
+import { logger } from '@/lib/logger';
+
+function optionalBoundedInt(min: number, max: number) {
+  return z.preprocess(
+    value => value === undefined ? undefined : Number(value),
+    z.number().int().optional()
+  ).transform(value => value === undefined ? undefined : Math.min(max, Math.max(min, value)));
+}
+
+const assignmentPatchSchema = z.object({
+  classId: z.string().trim().min(1).optional(),
+  topicId: z.string().trim().min(1).optional(),
+  title: z.string().trim().min(1, 'Tiêu đề bài tập không được để trống').max(160).optional(),
+  instruction: z.string().max(5000).optional().nullable(),
+  deadline: z.string()
+    .refine(value => !value || !Number.isNaN(Date.parse(value)), 'deadline must be a valid date')
+    .optional()
+    .nullable(),
+  minDurationSec: optionalBoundedInt(60, 1800),
+  minMessages: optionalBoundedInt(2, 20),
+  status: z.enum(['draft', 'published', 'archived']).optional(),
+});
 
 async function findOwnedAssignment(id: string, userId: string, role: string) {
   return prisma.assignment.findFirst({
@@ -58,7 +82,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const assignment = await findOwnedAssignment(id, session.user.id, session.user.role);
   if (!assignment) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const body = await req.json();
+  const parsed = await parseJsonBody(req, assignmentPatchSchema);
+  if (!parsed.ok) return parsed.response;
+
   const {
     classId,
     topicId,
@@ -68,20 +94,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     minDurationSec,
     minMessages,
     status,
-  } = body as {
-    classId?: string;
-    topicId?: string;
-    title?: string;
-    instruction?: string | null;
-    deadline?: string | null;
-    minDurationSec?: number;
-    minMessages?: number;
-    status?: string;
-  };
-
-  if (title !== undefined && title.trim().length === 0) {
-    return NextResponse.json({ error: 'Tiêu đề bài tập không được để trống' }, { status: 400 });
-  }
+  } = parsed.data;
 
   if (classId && classId !== assignment.classId) {
     const cls = await prisma.class.findFirst({
@@ -119,6 +132,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     },
     include: { topic: true, class: true, sessions: true },
   });
+  logger.info('Assignment updated', {
+    scope: 'audit.assignment.update',
+    actorId: session.user.id,
+    assignmentId: id,
+    status: updated.status,
+  });
 
   return NextResponse.json(updated);
 }
@@ -139,9 +158,19 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       where: { id },
       data: { status: 'archived' },
     });
+    logger.info('Assignment archived instead of deleted', {
+      scope: 'audit.assignment.archive',
+      actorId: session.user.id,
+      assignmentId: id,
+    });
     return NextResponse.json({ assignment: archived, deleted: false, archived: true });
   }
 
   await prisma.assignment.delete({ where: { id } });
+  logger.info('Assignment deleted', {
+    scope: 'audit.assignment.delete',
+    actorId: session.user.id,
+    assignmentId: id,
+  });
   return NextResponse.json({ deleted: true, archived: false });
 }

@@ -8,55 +8,75 @@ import { getConversationProgress } from '@/lib/conversation-policy';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { checkUserUsageLimit, getUsageWarning } from '@/lib/usage-control';
 import { logger } from '@/lib/logger';
+import { cefrLevelSchema, parseJsonBody } from '@/lib/api-validation';
+import { z } from 'zod';
+
+const chatRequestSchema = z.object({
+  studentMessage: z.string().trim().min(1, 'studentMessage is required').max(1000, 'Message too long'),
+  topicId: z.string().trim().min(1, 'topicId is required'),
+  level: cefrLevelSchema,
+  sessionId: z.string().trim().min(1).optional().nullable(),
+  history: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().max(4000),
+  })).default([]),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { studentMessage, topicId, level, history, sessionId } = body as {
-      studentMessage: string;
-      topicId: string;
-      level: string;
-      sessionId?: string;
-      history: ConversationHistory[];
-    };
+    const parsed = await parseJsonBody(request, chatRequestSchema);
+    if (!parsed.ok) return parsed.response;
 
-    if (!studentMessage || !topicId || !level) {
-      return NextResponse.json(
-        { error: 'Missing required fields: studentMessage, topicId, level' },
-        { status: 400 }
-      );
+    const { studentMessage, topicId, level, history, sessionId } = parsed.data;
+    const normalizedSessionId = sessionId || undefined;
+
+    let dbTopic: {
+      id: string;
+      title: string;
+      systemPrompt: string;
+    } | null = null;
+
+    try {
+      dbTopic = await prisma.topic.findUnique({
+        where: { id: topicId },
+        select: {
+          id: true,
+          title: true,
+          systemPrompt: true,
+        },
+      });
+    } catch (error) {
+      logger.warn('Topic lookup failed, trying built-in topic fallback', {
+        scope: 'api.chat.topic',
+        topicId,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
-    if (studentMessage.length > 1000) {
-      return NextResponse.json(
-        { error: 'Message too long' },
-        { status: 400 }
-      );
-    }
-
-    const dbTopic = await prisma.topic.findUnique({
-      where: { id: topicId },
-      select: {
-        id: true,
-        title: true,
-        systemPrompt: true,
-      },
-    });
     const inMemoryTopic = TOPICS.find(t => t.id === topicId);
     let topic = dbTopic ?? inMemoryTopic;
     let resolvedTopicId = dbTopic?.id ?? topicId;
 
     if (!dbTopic && inMemoryTopic) {
-      const matchingDbTopic = await prisma.topic.findFirst({
-        where: { title: inMemoryTopic.title },
-        select: { id: true, title: true, systemPrompt: true },
-      });
-      if (matchingDbTopic) {
-        topic = {
-          ...matchingDbTopic,
-          systemPrompt: matchingDbTopic.systemPrompt || inMemoryTopic.systemPrompt,
-        };
-        resolvedTopicId = matchingDbTopic.id;
+      try {
+        const matchingDbTopic = await prisma.topic.findFirst({
+          where: { title: inMemoryTopic.title },
+          select: { id: true, title: true, systemPrompt: true },
+        });
+        if (matchingDbTopic) {
+          topic = {
+            ...matchingDbTopic,
+            systemPrompt: matchingDbTopic.systemPrompt || inMemoryTopic.systemPrompt,
+          };
+          resolvedTopicId = matchingDbTopic.id;
+        }
+      } catch (error) {
+        logger.warn('Matching topic lookup failed, using built-in topic only', {
+          scope: 'api.chat.topic',
+          topicId,
+          title: inMemoryTopic.title,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 
@@ -70,7 +90,7 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-real-ip') ||
       'unknown';
     const rateLimit = checkRateLimit({
-      key: sessionId ? `session:${sessionId}` : `ip:${ip}`,
+      key: normalizedSessionId ? `session:${normalizedSessionId}` : `ip:${ip}`,
       limit: rateLimitPerHour,
       windowMs: 60 * 60 * 1000,
     });
@@ -101,7 +121,7 @@ export async function POST(request: NextRequest) {
     } | null = null;
     let usageWarning: string | null = null;
 
-    if (sessionId) {
+    if (normalizedSessionId) {
       const userSession = await auth();
       const user = userSession?.user;
       if (!user?.id) {
@@ -121,7 +141,7 @@ export async function POST(request: NextRequest) {
       usageWarning = getUsageWarning(usageLimit);
 
       persistedSession = await prisma.session.findFirst({
-        where: { id: sessionId, studentId: user.id },
+        where: { id: normalizedSessionId, studentId: user.id },
         include: {
           assignment: { select: { id: true, status: true, minMessages: true, minDurationSec: true } },
           _count: { select: { messages: { where: { role: 'user' } } } },
@@ -171,7 +191,7 @@ export async function POST(request: NextRequest) {
     const { aiResponse, usage, fallback } = await getAIResponse(
       studentMessage,
       topic.systemPrompt,
-      history || [],
+      history as ConversationHistory[],
       level,
       topic.title
     );
@@ -251,16 +271,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (errMessage.includes('No OpenAI key configured') || errMessage.includes('quota')) {
+    if (errMessage.includes('No OpenAI key configured')) {
       return NextResponse.json(
-        { error: errMessage },
+        {
+          error: 'AI speaking partner chưa sẵn sàng. Vui lòng cấu hình AI provider hoặc thử lại sau.',
+          code: 'AI_PROVIDER_NOT_CONFIGURED',
+        },
+        { status: 503 }
+      );
+    }
+
+    if (errMessage.toLowerCase().includes('quota')) {
+      return NextResponse.json(
+        {
+          error: 'Hệ thống AI đang đạt giới hạn sử dụng tạm thời. Vui lòng thử lại sau ít phút.',
+          code: 'AI_PROVIDER_QUOTA_EXCEEDED',
+        },
         { status: 503 }
       );
     }
 
     if (errMessage.includes('AI providers failed')) {
       return NextResponse.json(
-        { error: errMessage },
+        {
+          error: 'AI speaking partner chưa tạo được phản hồi ổn định. Vui lòng thử lại.',
+          code: 'AI_PROVIDER_FAILED',
+        },
         { status: 502 }
       );
     }

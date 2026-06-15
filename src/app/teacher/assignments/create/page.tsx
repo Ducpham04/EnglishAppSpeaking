@@ -17,6 +17,7 @@ import {
   Sparkles,
   Target,
 } from 'lucide-react';
+import { ASSIGNMENT_SCENARIOS, AssignmentScenario, scenarioInstructionExtra } from '@/lib/assignment-scenarios';
 
 interface ClassOption {
   id: string;
@@ -79,6 +80,7 @@ export default function CreateAssignmentPage() {
   const [goal, setGoal] = useState('');
   const [scenario, setScenario] = useState('');
   const [instruction, setInstruction] = useState('');
+  const [selectedScenarioId, setSelectedScenarioId] = useState('');
   const [deadline, setDeadline] = useState('');
   const [minDuration, setMinDuration] = useState(5);
   const [minMessages, setMinMessages] = useState(6);
@@ -93,8 +95,16 @@ export default function CreateAssignmentPage() {
       if (!active) return;
       const queryClassId = getQueryValue('classId');
       const queryTopicId = getQueryValue('topicId');
+      const queryTitle = getQueryValue('title');
+      const queryGoal = getQueryValue('goal');
+      const queryScenario = getQueryValue('scenario');
+      const queryInstruction = getQueryValue('instruction');
       if (queryClassId) setClassId(queryClassId);
       if (queryTopicId) setTopicId(queryTopicId);
+      if (queryTitle) setTitle(queryTitle);
+      if (queryGoal) setGoal(queryGoal);
+      if (queryScenario) setScenario(queryScenario);
+      if (queryInstruction) setInstruction(queryInstruction);
     });
     return () => {
       active = false;
@@ -124,6 +134,7 @@ export default function CreateAssignmentPage() {
 
   const selectedClass = classes.find(item => item.id === classId);
   const selectedTopic = topics.find(item => item.id === topicId);
+  const selectedScenario = ASSIGNMENT_SCENARIOS.find(item => item.id === selectedScenarioId);
   const composedInstruction = useMemo(
     () => buildInstruction({ goal, scenario, instruction, rubricItems }),
     [goal, scenario, instruction, rubricItems]
@@ -139,6 +150,17 @@ export default function CreateAssignmentPage() {
   const applyPreset = (minutes: number, messages: number) => {
     setMinDuration(minutes);
     setMinMessages(messages);
+  };
+
+  const applyScenario = (scenario: AssignmentScenario) => {
+    setSelectedScenarioId(scenario.id);
+    setTitle(scenario.title);
+    setGoal(scenario.goal);
+    setScenario(scenario.roleplay);
+    setInstruction(scenarioInstructionExtra(scenario));
+    setRubricItems(scenario.rubric);
+    setMinDuration(scenario.minutes);
+    setMinMessages(scenario.messages);
   };
 
   const handleSubmit = async (status: 'draft' | 'published') => {
@@ -217,6 +239,47 @@ export default function CreateAssignmentPage() {
           <div style={{ display: 'grid', gap: 16 }}>
             <section className="glass-card" style={{ padding: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                <Sparkles size={18} style={{ color: 'var(--primary)' }} />
+                <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>Roleplay preset</h2>
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 14 }}>
+                Chọn nhanh một tình huống đời thực. Bạn vẫn có thể chỉnh lại toàn bộ nội dung sau khi áp dụng.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12 }}>
+                {ASSIGNMENT_SCENARIOS.map(item => {
+                  const active = selectedScenarioId === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => applyScenario(item)}
+                      style={{
+                        textAlign: 'left',
+                        padding: 14,
+                        borderRadius: 8,
+                        border: `1px solid ${active ? 'var(--primary)' : '#E5E7EB'}`,
+                        background: active ? '#EFF6FF' : '#FFFFFF',
+                        color: 'var(--text-primary)',
+                        cursor: 'pointer',
+                        boxShadow: active ? '0 8px 20px rgba(37,99,235,0.12)' : 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, color: active ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 850, textTransform: 'uppercase' }}>
+                          {item.category} · {item.level}
+                        </span>
+                        <span style={{ fontSize: 11, color: '#0F766E', fontWeight: 850 }}>{item.minutes}p</span>
+                      </div>
+                      <p style={{ fontSize: 14, fontWeight: 850, marginBottom: 6 }}>{item.title}</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45 }}>{item.goal}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="glass-card" style={{ padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
                 <BookOpenCheck size={18} style={{ color: '#06B6D4' }} />
                 <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>1. Lớp và conversation</h2>
               </div>
@@ -246,7 +309,7 @@ export default function CreateAssignmentPage() {
               )}
 
               {selectedTopic && (
-                <div style={{ marginTop: 14, padding: 14, borderRadius: 8, background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.14)' }}>
+                <div style={{ marginTop: 14, padding: 14, borderRadius: 8, background: '#F0FDFA', border: '1px solid #99F6E4' }}>
                   <p style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 800 }}>{selectedTopic.icon} {selectedTopic.title} · {selectedTopic.level}</p>
                   <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>{selectedTopic.description || selectedTopic.openingQuestion || 'Conversation này sẽ được dùng làm ngữ cảnh cho AI.'}</p>
                 </div>
@@ -303,9 +366,9 @@ export default function CreateAssignmentPage() {
                             textAlign: 'left',
                             padding: '10px 12px',
                             borderRadius: 8,
-                            border: `1px solid ${checked ? 'rgba(16,185,129,0.45)' : 'rgba(255,255,255,0.1)'}`,
-                            background: checked ? 'rgba(16,185,129,0.11)' : 'rgba(255,255,255,0.03)',
-                            color: checked ? '#6EE7B7' : 'var(--text-secondary)',
+                            border: `1px solid ${checked ? '#86EFAC' : '#E5E7EB'}`,
+                            background: checked ? '#F0FDF4' : '#FFFFFF',
+                            color: checked ? '#166534' : 'var(--text-secondary)',
                             cursor: 'pointer',
                             fontSize: 12,
                             fontWeight: 700,
@@ -357,6 +420,7 @@ export default function CreateAssignmentPage() {
               <div style={{ display: 'grid', gap: 10, fontSize: 13 }}>
                 <PreviewRow label="Lớp" value={selectedClass?.name || 'Chưa chọn'} />
                 <PreviewRow label="Conversation" value={selectedTopic ? `${selectedTopic.icon} ${selectedTopic.title}` : 'Chưa chọn'} />
+                <PreviewRow label="Scenario" value={selectedScenario?.title || 'Tự thiết kế'} />
                 <PreviewRow label="Tiêu đề" value={title.trim() || 'Chưa nhập'} />
                 <PreviewRow label="Điều kiện" value={`${minDuration} phút · ${minMessages} lượt nói`} />
                 <PreviewRow label="Trạng thái" value={readyToPublish ? 'Sẵn sàng giao bài' : 'Cần bổ sung mục tiêu'} />
@@ -369,6 +433,19 @@ export default function CreateAssignmentPage() {
                 {composedInstruction || 'Nhập mục tiêu, tình huống và tiêu chí để học viên và AI có ngữ cảnh rõ ràng.'}
               </pre>
             </div>
+
+            {selectedScenario && (
+              <div className="glass-card" style={{ padding: 22, marginBottom: 14 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 10 }}>Target vocabulary</h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {selectedScenario.targetVocabulary.map(item => (
+                    <span key={item} style={{ padding: '6px 9px', borderRadius: 8, background: '#F0FDFA', border: '1px solid #99F6E4', color: '#0F766E', fontSize: 12, fontWeight: 750 }}>
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div style={{ display: 'grid', gap: 10 }}>
               <button type="button" className="btn-secondary" disabled={isLoading} onClick={() => handleSubmit('draft')} style={{ width: '100%', padding: '13px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -389,7 +466,7 @@ export default function CreateAssignmentPage() {
 
 function PreviewRow({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.04)' }}>
+    <div style={{ padding: '10px 12px', borderRadius: 8, background: '#F9FAFB', border: '1px solid #E5E7EB' }}>
       <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{label}</p>
       <p style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 800 }}>{value}</p>
     </div>
@@ -407,8 +484,8 @@ const labelStyle: CSSProperties = {
 const fieldStyle: CSSProperties = {
   width: '100%',
   padding: '12px 14px',
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid rgba(255,255,255,0.1)',
+  background: '#FFFFFF',
+  border: '1px solid #D1D5DB',
   borderRadius: 8,
   color: 'var(--text-primary)',
   fontSize: 14,
@@ -427,9 +504,9 @@ function presetStyle(active: boolean): CSSProperties {
   return {
     padding: '8px 11px',
     borderRadius: 8,
-    border: `1px solid ${active ? 'rgba(124,58,237,0.45)' : 'rgba(255,255,255,0.1)'}`,
-    background: active ? 'rgba(124,58,237,0.15)' : 'rgba(255,255,255,0.03)',
-    color: active ? 'var(--primary-light)' : 'var(--text-secondary)',
+    border: `1px solid ${active ? 'var(--primary)' : '#D1D5DB'}`,
+    background: active ? '#EFF6FF' : '#FFFFFF',
+    color: active ? 'var(--primary)' : 'var(--text-secondary)',
     cursor: 'pointer',
     fontSize: 12,
     fontWeight: 800,

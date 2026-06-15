@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { TOPICS } from '@/lib/topics';
 import { Topic } from '@/lib/types';
+import { logger } from '@/lib/logger';
 
 type DbTopic = {
   id: string;
@@ -12,6 +13,12 @@ type DbTopic = {
   description: string | null;
   openingQuestion: string | null;
 };
+type TopicSession = {
+  user?: {
+    id?: string;
+    role?: string;
+  };
+} | null;
 
 function normalizeDbTopic(topic: DbTopic): Topic {
   return {
@@ -51,37 +58,61 @@ function mergeTopics(dbTopics: DbTopic[]) {
 }
 
 export async function GET() {
-  const session = await auth();
+  let session: TopicSession = null;
+
+  try {
+    session = await auth() as TopicSession;
+  } catch (error) {
+    logger.warn('Topics auth unavailable, serving built-in topics', {
+      route: '/api/topics',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
   const userRole = session?.user?.role;
   const userId = session?.user?.id;
 
-  if (userRole === 'admin') {
+  try {
+    if (userRole === 'admin') {
+      const topics = await prisma.topic.findMany({
+        orderBy: [{ level: 'asc' }, { title: 'asc' }],
+        select: { id: true, title: true, icon: true, level: true, description: true, openingQuestion: true },
+      });
+      return NextResponse.json({ topics: mergeTopics(topics), source: 'database' });
+    }
+
+    if (userRole === 'teacher' && userId) {
+      const topics = await prisma.topic.findMany({
+        where: {
+          OR: [
+            { isPublic: true },
+            { createdById: userId },
+          ],
+        },
+        orderBy: [{ level: 'asc' }, { title: 'asc' }],
+        select: { id: true, title: true, icon: true, level: true, description: true, openingQuestion: true },
+      });
+      return NextResponse.json({ topics: mergeTopics(topics), source: 'database' });
+    }
+
     const topics = await prisma.topic.findMany({
+      where: { isPublic: true },
       orderBy: [{ level: 'asc' }, { title: 'asc' }],
       select: { id: true, title: true, icon: true, level: true, description: true, openingQuestion: true },
     });
-    return NextResponse.json({ topics: mergeTopics(topics) });
-  }
 
-  if (userRole === 'teacher' && userId) {
-    const topics = await prisma.topic.findMany({
-      where: {
-        OR: [
-          { isPublic: true },
-          { createdById: userId },
-        ],
-      },
-      orderBy: [{ level: 'asc' }, { title: 'asc' }],
-      select: { id: true, title: true, icon: true, level: true, description: true, openingQuestion: true },
+    return NextResponse.json({ topics: mergeTopics(topics), source: 'database' });
+  } catch (error) {
+    logger.warn('Topics database unavailable, serving built-in topics', {
+      route: '/api/topics',
+      role: userRole ?? 'guest',
+      error: error instanceof Error ? error.message : String(error),
     });
-    return NextResponse.json({ topics: mergeTopics(topics) });
+
+    return NextResponse.json({
+      topics: mergeTopics([]),
+      source: 'fallback',
+      warning: 'Topic database is temporarily unavailable. Built-in topics are being used.',
+    });
   }
-
-  const topics = await prisma.topic.findMany({
-    where: { isPublic: true },
-    orderBy: [{ level: 'asc' }, { title: 'asc' }],
-    select: { id: true, title: true, icon: true, level: true, description: true, openingQuestion: true },
-  });
-
-  return NextResponse.json({ topics: mergeTopics(topics) });
 }

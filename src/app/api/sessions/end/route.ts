@@ -3,13 +3,25 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { calculateSessionScore, isCorrectionMessage } from '@/lib/conversation-policy';
 import { evaluateConversation } from '@/lib/ai';
+import { parseJsonBody } from '@/lib/api-validation';
+import { z } from 'zod';
+
+const endSessionSchema = z.object({
+  sessionId: z.string().trim().min(1).optional().nullable(),
+  totalUserMessages: z.number().int().min(0).default(0),
+  totalAiMessages: z.number().int().min(0).default(0),
+  score: z.number().int().min(0).max(100).optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
+    const parsed = await parseJsonBody(request, endSessionSchema);
+    if (!parsed.ok) return parsed.response;
+
     const userSession = await auth();
     const user = userSession?.user;
 
-    const { sessionId, totalUserMessages = 0, totalAiMessages = 0, score } = await request.json();
+    const { sessionId, totalUserMessages, totalAiMessages, score } = parsed.data;
 
     // No sessionId or not authenticated — nothing to update
     if (!sessionId || !user?.id) return NextResponse.json({ ok: true });

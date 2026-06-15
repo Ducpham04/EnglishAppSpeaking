@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Mic, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -19,13 +19,14 @@ export default function LoginPage() {
 
     try {
       const result = await signIn('credentials', {
-        email,
+        identifier,
+        email: identifier,
         password,
         redirect: false,
       });
 
       if (!result || result.error || result.ok === false) {
-        setError('Email hoặc mật khẩu không đúng');
+        setError('Email/số điện thoại hoặc mật khẩu không đúng');
       } else {
         window.location.assign('/auth/redirect');
       }
@@ -89,19 +90,21 @@ export default function LoginPage() {
             )}
 
             <form onSubmit={handleSubmit}>
-              {/* Email */}
+              {/* Login identifier */}
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>
-                  Email
+                  Email hoặc số điện thoại
                 </label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
                     id="login-email"
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="you@example.com"
+                    type="text"
+                    inputMode="email"
+                    autoComplete="username"
+                    value={identifier}
+                    onChange={e => setIdentifier(e.target.value)}
+                    placeholder="you@example.com hoặc 0912345678"
                     required
                     style={{
                       width: '100%', padding: '12px 14px 12px 42px',
@@ -197,14 +200,14 @@ export default function LoginPage() {
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {[
-                  { role: 'Admin', email: 'admin@gbspeaking.com', color: '#EF4444' },
-                  { role: 'Teacher', email: 'teacher@gbspeaking.com', color: '#F59E0B' },
-                  { role: 'Student', email: 'student@gbspeaking.com', color: '#10B981' },
+                  { role: 'Admin', identifier: 'admin@gbspeaking.com', color: '#EF4444' },
+                  { role: 'Teacher', identifier: 'teacher@gbspeaking.com', color: '#F59E0B' },
+                  { role: 'Student', identifier: 'student@gbspeaking.com', color: '#10B981' },
                 ].map(acc => (
                   <button
                     key={acc.role}
                     type="button"
-                    onClick={() => { setEmail(acc.email); setPassword(acc.role.toLowerCase() + '123'); }}
+                    onClick={() => { setIdentifier(acc.identifier); setPassword(acc.role.toLowerCase() + '123'); }}
                     style={{
                       background: 'transparent', border: 'none', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0',
@@ -215,7 +218,7 @@ export default function LoginPage() {
                       fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
                       background: `${acc.color}15`, color: acc.color, border: `1px solid ${acc.color}30`,
                     }}>{acc.role}</span>
-                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{acc.email}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{acc.identifier}</span>
                     <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>Click để điền</span>
                   </button>
                 ))}

@@ -102,7 +102,7 @@ export default async function StudentClassesPage() {
 
                   <div style={{ display: 'grid', gap: 6, minWidth: 190, padding: 12, borderRadius: 8, background: 'rgba(255,255,255,0.035)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <InfoLine icon={UserRound} text={enrollment.class.teacher.name} />
-                    <InfoLine icon={Mail} text={enrollment.class.teacher.email} />
+                    <InfoLine icon={Mail} text={enrollment.class.teacher.email ?? 'Chưa có email'} />
                     <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Mã lớp: <strong style={{ color: 'var(--text-primary)' }}>{enrollment.class.joinCode}</strong></p>
                   </div>
                 </div>

@@ -69,6 +69,26 @@ beforeEach(() => {
 });
 
 describe('/api/chat POST', () => {
+  it('returns structured validation errors for invalid payloads', async () => {
+    const req = {
+      json: async () => ({
+        studentMessage: '',
+        topicId: '',
+        level: 'Z9',
+        history: [],
+      }),
+      headers: new Headers(),
+    } as unknown as NextRequest;
+
+    const res = await chatRoute.POST(req);
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.code).toBe('VALIDATION_ERROR');
+    expect(json.issues.length).toBeGreaterThan(0);
+    expect(getAIResponse).not.toHaveBeenCalled();
+  });
+
   it('persists messages and ai usage with estimatedCost', async () => {
     const body = {
       studentMessage: 'Hello',

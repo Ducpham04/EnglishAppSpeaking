@@ -3,26 +3,28 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { TOPICS } from '@/lib/topics';
 import { formatLimitError, getStudentPlanUsage } from '@/lib/subscriptions';
+import { cefrLevelSchema, parseJsonBody } from '@/lib/api-validation';
+import { z } from 'zod';
+
+const startSessionSchema = z.object({
+  topicId: z.string().trim().min(1, 'topicId is required'),
+  level: cefrLevelSchema,
+  assignmentId: z.string().trim().min(1).optional().nullable(),
+});
 
 export async function POST(request: NextRequest) {
   try {
+    const parsed = await parseJsonBody(request, startSessionSchema);
+    if (!parsed.ok) return parsed.response;
+
+    const { topicId, level, assignmentId } = parsed.data;
+
     const userSession = await auth();
     const user = userSession?.user;
 
     // Anonymous users — return null sessionId gracefully (no DB persist)
     if (!user || !user.id) {
       return NextResponse.json({ sessionId: null, anonymous: true });
-    }
-
-    const body = await request.json();
-    const { topicId, level, assignmentId } = body as {
-      topicId: string;
-      level: string;
-      assignmentId?: string | null;
-    };
-
-    if (!topicId || !level) {
-      return NextResponse.json({ error: 'Missing topicId or level' }, { status: 400 });
     }
 
     let assignmentTopicId: string | null = null;
