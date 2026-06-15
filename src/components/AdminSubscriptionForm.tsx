@@ -45,6 +45,8 @@ export default function AdminSubscriptionForm({ userId, plans }: { userId: strin
     }
   };
 
+  const selectedPlan = plans.find(plan => plan.id === planId);
+
   return (
     <div style={{ display: 'grid', gap: 6, minWidth: 260 }}>
       <div style={{ display: 'flex', gap: 6 }}>
@@ -60,9 +62,12 @@ export default function AdminSubscriptionForm({ userId, plans }: { userId: strin
       <input
         value={paymentNote}
         onChange={event => setPaymentNote(event.target.value)}
-        placeholder="Ghi chú thanh toán"
+        placeholder={selectedPlan ? `VD: QR ${selectedPlan.name}` : 'Ghi chú thanh toán'}
         style={fieldStyle}
       />
+      <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.45 }}>
+        Cấp {selectedPlan?.name ?? 'gói'} trong {months} tháng. Gói active cũ sẽ tự chuyển sang expired.
+      </p>
       <button type="button" disabled={loading || !planId} onClick={submit} style={buttonStyle}>
         {loading ? <Loader2 size={13} style={{ animation: 'spin-slow 1s linear infinite' }} /> : <PackageCheck size={13} />}
         Cấp gói

@@ -3,7 +3,9 @@ import { redirect } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { checkUserUsageLimit } from '@/lib/usage-control';
 import { getDaysUntil, getStudentPlanUsage, getTeacherPlanUsage } from '@/lib/subscriptions';
-import { AlertTriangle, CalendarClock, CheckCircle2, Gauge, PackageCheck } from 'lucide-react';
+import { prisma } from '@/lib/prisma';
+import { formatVnd, getPaymentConfig } from '@/lib/payment';
+import { AlertTriangle, CalendarClock, CheckCircle2, Copy, CreditCard, Gauge, PackageCheck, QrCode } from 'lucide-react';
 
 function formatNumber(value: number) {
   return value.toLocaleString('vi-VN');
@@ -43,10 +45,15 @@ export default async function AccountPlanPage() {
   if (!session?.user) redirect('/login');
   if (session.user.role === 'admin') redirect('/admin/dashboard');
   const isTeacher = session.user.role === 'teacher';
+  const payment = getPaymentConfig();
 
-  const [tokenUsage, planUsage] = await Promise.all([
+  const [tokenUsage, planUsage, availablePlans] = await Promise.all([
     checkUserUsageLimit(session.user.id),
     isTeacher ? getTeacherPlanUsage(session.user.id) : getStudentPlanUsage(session.user.id),
+    prisma.plan.findMany({
+      where: { role: isTeacher ? 'teacher' : 'student', isActive: true },
+      orderBy: { priceVnd: 'asc' },
+    }),
   ]);
   const teacherUsage = isTeacher ? planUsage as Awaited<ReturnType<typeof getTeacherPlanUsage>> : null;
 
@@ -57,7 +64,7 @@ export default async function AccountPlanPage() {
 
   return (
     <DashboardLayout title="Gói của tôi">
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(320px, 0.8fr)', gap: 18, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(320px, 0.8fr)', gap: 18, alignItems: 'start', marginBottom: 18 }}>
         <section className="glass-card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 22 }}>
             <div>
@@ -122,7 +129,114 @@ export default async function AccountPlanPage() {
           </p>
         </aside>
       </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(320px, 0.7fr)', gap: 18, alignItems: 'start' }}>
+        <section className="glass-card" style={{ padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+            <CreditCard size={20} style={{ color: 'var(--primary)' }} />
+            <div>
+              <h2 style={{ fontSize: 18, color: 'var(--text-primary)', fontWeight: 800 }}>Chọn gói nâng cấp</h2>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>Chuyển khoản đúng nội dung để admin đối soát và cấp gói nhanh hơn.</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 14 }}>
+            {availablePlans.map(planOption => {
+              const features = parseFeatures(planOption.featuresJson);
+              const selected = planOption.id === plan?.id;
+              return (
+                <div key={planOption.id} style={{
+                  padding: 18,
+                  borderRadius: 8,
+                  border: `1px solid ${selected ? 'rgba(37,99,235,0.38)' : '#E5E7EB'}`,
+                  background: selected ? '#EFF6FF' : '#FFFFFF',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 10 }}>
+                    <div>
+                      <h3 style={{ fontSize: 16, color: 'var(--text-primary)', fontWeight: 850 }}>{planOption.name}</h3>
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.45 }}>{planOption.description}</p>
+                    </div>
+                    {selected ? (
+                      <span style={{ fontSize: 10, fontWeight: 850, color: '#2563EB', background: '#DBEAFE', border: '1px solid #BFDBFE', borderRadius: 6, padding: '4px 7px', whiteSpace: 'nowrap' }}>
+                        Đang dùng
+                      </span>
+                    ) : null}
+                  </div>
+                  <p style={{ fontSize: 24, fontFamily: 'Outfit, sans-serif', fontWeight: 850, color: 'var(--primary-dark)', marginBottom: 12 }}>
+                    {formatVnd(planOption.priceVnd)}
+                    {planOption.priceVnd > 0 && <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}> / tháng</span>}
+                  </p>
+                  <ul style={{ listStyle: 'none', display: 'grid', gap: 8 }}>
+                    {features.map(feature => (
+                      <li key={feature} style={{ display: 'flex', gap: 7, alignItems: 'flex-start', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                        <CheckCircle2 size={14} style={{ color: '#10B981', flexShrink: 0, marginTop: 1 }} />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <aside className="glass-card" style={{ padding: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
+            <QrCode size={19} style={{ color: '#0F766E' }} />
+            <h2 style={{ fontSize: 17, color: 'var(--text-primary)', fontWeight: 850 }}>Thanh toán QR</h2>
+          </div>
+
+          {payment.qrImageUrl ? (
+            <div style={{ padding: 12, borderRadius: 8, border: '1px solid #E5E7EB', background: '#FFFFFF', marginBottom: 14 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={payment.qrImageUrl} alt="Mã QR thanh toán GB Speaking AI" style={{ width: '100%', borderRadius: 6, display: 'block' }} />
+            </div>
+          ) : (
+            <div style={{ minHeight: 220, borderRadius: 8, border: '1px dashed #CBD5E1', background: '#F8FAFC', display: 'grid', placeItems: 'center', textAlign: 'center', padding: 20, marginBottom: 14 }}>
+              <div>
+                <QrCode size={42} style={{ color: 'var(--text-muted)', marginBottom: 10 }} />
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>Admin chưa cấu hình ảnh QR thanh toán.</p>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gap: 9, marginBottom: 14 }}>
+            <PaymentInfo label="Ngân hàng" value={payment.bankName || 'Chưa cấu hình'} />
+            <PaymentInfo label="Chủ tài khoản" value={payment.accountName || 'Chưa cấu hình'} />
+            <PaymentInfo label="Số tài khoản" value={payment.accountNumber || 'Chưa cấu hình'} />
+          </div>
+
+          <div style={{ padding: 12, borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', marginBottom: 12 }}>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 850, textTransform: 'uppercase', marginBottom: 6 }}>Nội dung chuyển khoản</p>
+            <p style={{ fontSize: 14, color: 'var(--primary-dark)', fontWeight: 850, wordBreak: 'break-word', display: 'flex', alignItems: 'center', gap: 7 }}>
+              <Copy size={14} />
+              {payment.notePrefix} {session.user.id.slice(-6).toUpperCase()}
+            </p>
+          </div>
+
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>{payment.contactText}</p>
+        </aside>
+      </div>
     </DashboardLayout>
+  );
+}
+
+function parseFeatures(featuresJson: string | null) {
+  if (!featuresJson) return ['Hạn mức theo cấu hình gói'];
+  try {
+    const parsed = JSON.parse(featuresJson);
+    return Array.isArray(parsed) && parsed.every(item => typeof item === 'string') ? parsed : ['Hạn mức theo cấu hình gói'];
+  } catch {
+    return ['Hạn mức theo cấu hình gói'];
+  }
+}
+
+function PaymentInfo({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, paddingBottom: 8, borderBottom: '1px solid #E5E7EB' }}>
+      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{label}</span>
+      <strong style={{ fontSize: 12, color: 'var(--text-primary)', textAlign: 'right' }}>{value}</strong>
+    </div>
   );
 }
 

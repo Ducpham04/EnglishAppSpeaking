@@ -33,6 +33,7 @@ const ADMIN_NAV: NavItem[] = [
   { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Giáo viên', href: '/admin/teachers', icon: Users },
   { label: 'Học viên', href: '/admin/students', icon: BookOpen },
+  { label: 'Gói', href: '/admin/plans', icon: CreditCard },
   { label: 'Topic', href: '/admin/topics', icon: Mic },
   { label: 'Usage', href: '/admin/usage', icon: BarChart2 },
   { label: 'Cài đặt', href: '/admin/settings', icon: Settings },

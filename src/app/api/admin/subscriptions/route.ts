@@ -18,6 +18,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'userId và planId là bắt buộc' }, { status: 400 });
   }
 
+  const parsedEndsAt = endsAt ? new Date(endsAt) : null;
+  if (parsedEndsAt && Number.isNaN(parsedEndsAt.getTime())) {
+    return NextResponse.json({ error: 'Ngày hết hạn không hợp lệ' }, { status: 400 });
+  }
+  if (parsedEndsAt && parsedEndsAt <= new Date()) {
+    return NextResponse.json({ error: 'Ngày hết hạn phải nằm trong tương lai' }, { status: 400 });
+  }
+
   const [user, plan] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true } }),
     prisma.plan.findUnique({ where: { id: planId }, select: { id: true, role: true, isActive: true } }),
@@ -46,7 +54,7 @@ export async function POST(request: NextRequest) {
       planId,
       status: 'active',
       startsAt: new Date(),
-      endsAt: endsAt ? new Date(endsAt) : null,
+      endsAt: parsedEndsAt,
       activatedBy: session.user.id,
       paymentNote: paymentNote?.trim() || null,
     },
