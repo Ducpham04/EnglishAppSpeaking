@@ -2,14 +2,19 @@ import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Settings, Shield, Info } from 'lucide-react';
+import AdminPaymentSettingsForm from '@/components/AdminPaymentSettingsForm';
+import { getPaymentConfig } from '@/lib/payment';
 
 export default async function AdminSettings() {
   const session = await auth();
   if (!session?.user) redirect('/login');
   if (session.user.role !== 'admin') redirect('/');
+  const payment = await getPaymentConfig();
 
   return (
     <DashboardLayout title="Cài đặt Admin">
+      <AdminPaymentSettingsForm initialPayment={payment} />
+
       <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
         <h2 style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: 18, color: 'var(--text-primary)', marginBottom: 16 }}>Cài đặt ứng dụng chung</h2>
         <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>Hiện tại trang cài đặt chỉ hiển thị thông tin cấu hình cơ bản. Bạn có thể mở rộng nó với các tùy chọn quản trị như quản lý vai trò, thiết lập giới hạn AI hoặc cấu hình hệ thống.</p>

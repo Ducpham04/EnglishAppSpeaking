@@ -26,7 +26,7 @@ export default async function AdminPlansPage() {
   if (!session?.user) redirect('/login');
   if (session.user.role !== 'admin') redirect('/');
 
-  const payment = getPaymentConfig();
+  const payment = await getPaymentConfig();
   const now = new Date();
   const [plans, activeSubscriptions, recentSubscriptions] = await Promise.all([
     prisma.plan.findMany({

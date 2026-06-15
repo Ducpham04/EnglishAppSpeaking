@@ -45,7 +45,7 @@ export default async function AccountPlanPage() {
   if (!session?.user) redirect('/login');
   if (session.user.role === 'admin') redirect('/admin/dashboard');
   const isTeacher = session.user.role === 'teacher';
-  const payment = getPaymentConfig();
+  const payment = await getPaymentConfig();
 
   const [tokenUsage, planUsage, availablePlans] = await Promise.all([
     checkUserUsageLimit(session.user.id),

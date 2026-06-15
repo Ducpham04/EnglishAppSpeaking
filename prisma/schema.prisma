@@ -264,3 +264,15 @@ model Subscription {
   @@index([planId])
   @@map("subscriptions")
 }
+
+// ============================================
+// 12. App Settings
+// ============================================
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@map("app_settings")
+}
