@@ -36,6 +36,8 @@ export default function TeacherTopicsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all');
+  const [levelFilter, setLevelFilter] = useState('all');
+  const [search, setSearch] = useState('');
 
   const loadTopics = async () => {
     setLoading(true);
@@ -60,10 +62,16 @@ export default function TeacherTopicsPage() {
   }, []);
 
   const filteredTopics = useMemo(() => {
-    if (filter === 'public') return topics.filter(topic => topic.isPublic);
-    if (filter === 'private') return topics.filter(topic => !topic.isPublic);
-    return topics;
-  }, [filter, topics]);
+    const query = search.trim().toLowerCase();
+    return topics.filter(topic => {
+      const matchesVisibility = filter === 'all' || (filter === 'public' ? topic.isPublic : !topic.isPublic);
+      const matchesLevel = levelFilter === 'all' || topic.level === levelFilter;
+      const matchesSearch = !query || [topic.title, topic.description, topic.openingQuestion, topic.level]
+        .filter(Boolean)
+        .some(value => value!.toLowerCase().includes(query));
+      return matchesVisibility && matchesLevel && matchesSearch;
+    });
+  }, [filter, levelFilter, search, topics]);
 
   const toggleVisibility = async (topic: TeacherTopic) => {
     setBusyId(topic.id);
@@ -137,30 +145,65 @@ export default function TeacherTopicsPage() {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 18 }}>
-        {[
-          ['all', 'Tất cả'],
-          ['public', 'Public'],
-          ['private', 'Riêng tư'],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setFilter(value)}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: `1px solid ${filter === value ? 'rgba(124,58,237,0.45)' : 'rgba(255,255,255,0.1)'}`,
-              background: filter === value ? 'rgba(124,58,237,0.15)' : 'rgba(255,255,255,0.03)',
-              color: filter === value ? 'var(--primary-light)' : 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontWeight: 800,
-            }}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="glass-card teacher-topic-toolbar" style={{ padding: 14, display: 'grid', gridTemplateColumns: 'minmax(220px, 1fr) auto auto', gap: 12, alignItems: 'center', marginBottom: 18 }}>
+        <input
+          value={search}
+          onChange={event => setSearch(event.target.value)}
+          placeholder="Tìm theo tên topic, mô tả, câu mở đầu..."
+          style={{
+            width: '100%',
+            minHeight: 40,
+            borderRadius: 8,
+            border: '1px solid #D1D5DB',
+            background: '#FFFFFF',
+            color: 'var(--text-primary)',
+            padding: '0 12px',
+            fontSize: 13,
+          }}
+        />
+        <select
+          value={levelFilter}
+          onChange={event => setLevelFilter(event.target.value)}
+          style={{
+            minHeight: 40,
+            borderRadius: 8,
+            border: '1px solid #D1D5DB',
+            background: '#FFFFFF',
+            color: 'var(--text-primary)',
+            padding: '0 10px',
+            fontSize: 13,
+            fontWeight: 700,
+          }}
+        >
+          <option value="all">Tất cả level</option>
+          {['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(level => <option key={level} value={level}>{level}</option>)}
+        </select>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            ['all', 'Tất cả'],
+            ['public', 'Public'],
+            ['private', 'Riêng tư'],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFilter(value)}
+              style={{
+                minHeight: 40,
+                padding: '0 12px',
+                borderRadius: 8,
+                border: `1px solid ${filter === value ? '#93C5FD' : '#D1D5DB'}`,
+                background: filter === value ? '#EFF6FF' : '#FFFFFF',
+                color: filter === value ? 'var(--primary)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: 800,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error && (
@@ -192,7 +235,7 @@ export default function TeacherTopicsPage() {
             return (
               <article key={topic.id} className="glass-card" style={{ padding: 20 }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(124,58,237,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 8, background: '#EFF6FF', border: '1px solid #BFDBFE', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
                     {topic.icon}
                   </div>
                   <div style={{ flex: 1 }}>
@@ -215,7 +258,7 @@ export default function TeacherTopicsPage() {
                     </button>
                   </Link>
                   <Link href={`/teacher/topics/${topic.id}/edit`} style={{ textDecoration: 'none' }}>
-                    <button style={iconButton('var(--primary-light)', 'rgba(124,58,237,0.12)', 'rgba(124,58,237,0.25)')} title="Sửa topic">
+                    <button style={iconButton('var(--primary-light)', '#EFF6FF', '#BFDBFE')} title="Sửa topic">
                       <Edit3 size={14} />
                     </button>
                   </Link>

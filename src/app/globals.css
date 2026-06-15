@@ -1311,7 +1311,8 @@ th.admin-action-col {
   }
 
   .student-focus-hero,
-  .practice-room-grid {
+  .practice-room-grid,
+  .teacher-topic-toolbar {
     grid-template-columns: 1fr;
   }
 
