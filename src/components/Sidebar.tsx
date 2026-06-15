@@ -98,19 +98,20 @@ export default function Sidebar() {
             width: 38, height: 38, borderRadius: 8,
             background: `${roleColor}12`, border: `1px solid ${roleColor}30`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 14, fontWeight: 700, color: roleColor,
+            fontSize: 14, fontWeight: 700, color: roleColor, flexShrink: 0,
           }}>
             {session?.user?.name?.[0]?.toUpperCase() ?? '?'}
           </div>
-          <div style={{ overflow: 'hidden' }}>
+          <div style={{ overflow: 'hidden', minWidth: 0 }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {session?.user?.name}
             </p>
             <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
               fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
               background: `${roleColor}10`, color: roleColor, border: `1px solid ${roleColor}25`,
             }}>
-              {role === 'admin' && <Shield size={9} style={{ marginRight: 3, verticalAlign: 'middle' }} />}
+              {role === 'admin' && <Shield size={9} />}
               {ROLE_LABEL[role]}
             </span>
           </div>

@@ -59,9 +59,9 @@ export default async function AdminTeachers({ searchParams }: { searchParams?: P
 
   return (
     <DashboardLayout title="Quản lý Giáo viên">
-      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+      <div className="admin-list-toolbar" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>Hiển thị: <strong style={{ color: 'var(--text-primary)' }}>{filteredTeachers.length}</strong> / {teachers.length} giáo viên</span>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {filters.map(filter => (
             <Link key={filter.href} href={filter.href} style={{
               textDecoration: 'none',
@@ -83,12 +83,13 @@ export default async function AdminTeachers({ searchParams }: { searchParams?: P
           <p style={{ color: 'var(--text-muted)' }}>Không có giáo viên phù hợp bộ lọc.</p>
         </div>
       ) : (
-        <div className="glass-card" style={{ overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="glass-card admin-table-card">
+          <div className="admin-table-scroll">
+          <table style={{ width: '100%', minWidth: 1120, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                {['Giáo viên', 'Email', 'Lớp học', 'Học viên', 'Bài tập', 'Gói hiện tại', 'Cấp gói'].map(h => (
-                  <th key={h} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</th>
+                {['Giáo viên', 'Email', 'Lớp học', 'Học viên', 'Bài tập', 'Gói hiện tại', 'Cấp gói'].map((h, index, list) => (
+                  <th key={h} className={index === list.length - 1 ? 'admin-action-col' : undefined} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -99,15 +100,15 @@ export default async function AdminTeachers({ searchParams }: { searchParams?: P
                 const activeSubscription = t.subscriptions[0];
                 return (
                   <tr key={t.id} style={{ borderBottom: i < filteredTeachers.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                    <td style={{ padding: '14px 16px' }}>
+                    <td style={{ padding: '14px 16px', minWidth: 160 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#F59E0B', flexShrink: 0 }}>
                           {t.name[0]}
                         </div>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{t.name}</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35 }}>{t.name}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>{t.email}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-secondary)', minWidth: 220 }}>{t.email ?? t.phone ?? '—'}</td>
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--text-secondary)' }}>
                         <School size={13} /> {t.teacherClasses.length}
@@ -139,7 +140,7 @@ export default async function AdminTeachers({ searchParams }: { searchParams?: P
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '14px 16px' }}>
+                    <td className="admin-action-col" style={{ padding: '14px 16px' }}>
                       <AdminSubscriptionForm userId={t.id} plans={teacherPlans} />
                     </td>
                   </tr>
@@ -147,6 +148,7 @@ export default async function AdminTeachers({ searchParams }: { searchParams?: P
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </DashboardLayout>

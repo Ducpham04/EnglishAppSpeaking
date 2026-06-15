@@ -65,9 +65,9 @@ export default async function AdminStudents({ searchParams }: { searchParams?: P
 
   return (
     <DashboardLayout title="Quản lý Học viên">
-      <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+      <div className="admin-list-toolbar" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>Hiển thị: <strong style={{ color: 'var(--text-primary)' }}>{filteredStudents.length}</strong> / {students.length} học viên</span>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {filters.map(filter => (
             <Link key={filter.href} href={filter.href} style={{
               textDecoration: 'none',
@@ -89,12 +89,13 @@ export default async function AdminStudents({ searchParams }: { searchParams?: P
           <p style={{ color: 'var(--text-muted)' }}>Không có học viên phù hợp bộ lọc.</p>
         </div>
       ) : (
-        <div className="glass-card" style={{ overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="glass-card admin-table-card">
+          <div className="admin-table-scroll">
+          <table style={{ width: '100%', minWidth: 1320, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                {['Học viên', 'Email', 'Lớp học', 'Sessions', 'Điểm TB', 'Hoạt động gần nhất', 'Gói hiện tại', 'Trạng thái', 'Cấp gói'].map(h => (
-                  <th key={h} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
+                {['Học viên', 'Email', 'Lớp học', 'Sessions', 'Điểm TB', 'Hoạt động gần nhất', 'Gói hiện tại', 'Trạng thái', 'Cấp gói'].map((h, index, list) => (
+                  <th key={h} className={index === list.length - 1 ? 'admin-action-col' : undefined} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -106,16 +107,16 @@ export default async function AdminStudents({ searchParams }: { searchParams?: P
                 const activeSubscription = s.subscriptions[0];
                 return (
                   <tr key={s.id} style={{ borderBottom: i < filteredStudents.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                    <td style={{ padding: '14px 16px' }}>
+                    <td style={{ padding: '14px 16px', minWidth: 150 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#10B981', flexShrink: 0 }}>
                           {s.name[0]}
                         </div>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{s.name}</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.35 }}>{s.name}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>{s.email}</td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>
+                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-secondary)', minWidth: 220 }}>{s.email ?? s.phone ?? '—'}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-secondary)', minWidth: 190, lineHeight: 1.45 }}>
                       {s.enrollments.length > 0
                         ? s.enrollments.map(e => e.class.name).join(', ')
                         : <span style={{ color: 'var(--text-muted)' }}>—</span>}
@@ -159,7 +160,7 @@ export default async function AdminStudents({ searchParams }: { searchParams?: P
                         {s.status === 'active' ? 'Hoạt động' : s.status}
                       </span>
                     </td>
-                    <td style={{ padding: '14px 16px' }}>
+                    <td className="admin-action-col" style={{ padding: '14px 16px' }}>
                       <AdminSubscriptionForm userId={s.id} plans={studentPlans} />
                     </td>
                   </tr>
@@ -167,6 +168,7 @@ export default async function AdminStudents({ searchParams }: { searchParams?: P
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </DashboardLayout>

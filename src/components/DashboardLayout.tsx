@@ -13,7 +13,7 @@ export default function DashboardLayout({ children, title }: { children: React.R
             {title}
           </h1>
         )}
-        <div style={{ maxWidth: 1180 }}>
+        <div style={{ width: '100%', minWidth: 0 }}>
           {children}
         </div>
       </main>
