@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Users, Mic, Star } from 'lucide-react';
 import AdminSubscriptionForm from '@/components/AdminSubscriptionForm';
+import AdminPasswordResetForm from '@/components/AdminPasswordResetForm';
 import { getDaysUntil } from '@/lib/subscriptions';
 
 export default async function AdminStudents({ searchParams }: { searchParams?: Promise<{ plan?: string }> }) {
@@ -91,10 +92,10 @@ export default async function AdminStudents({ searchParams }: { searchParams?: P
       ) : (
         <div className="glass-card admin-table-card">
           <div className="admin-table-scroll">
-          <table style={{ width: '100%', minWidth: 1320, borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', minWidth: 1560, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                {['Học viên', 'Email', 'Lớp học', 'Sessions', 'Điểm TB', 'Hoạt động gần nhất', 'Gói hiện tại', 'Trạng thái', 'Cấp gói'].map((h, index, list) => (
+                {['Học viên', 'Email', 'Lớp học', 'Sessions', 'Điểm TB', 'Hoạt động gần nhất', 'Gói hiện tại', 'Trạng thái', 'Mật khẩu', 'Cấp gói'].map((h, index, list) => (
                   <th key={h} className={index === list.length - 1 ? 'admin-action-col' : undefined} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -159,6 +160,9 @@ export default async function AdminStudents({ searchParams }: { searchParams?: P
                       <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: s.status === 'active' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: s.status === 'active' ? '#10B981' : '#EF4444' }}>
                         {s.status === 'active' ? 'Hoạt động' : s.status}
                       </span>
+                    </td>
+                    <td style={{ padding: '14px 16px', minWidth: 250 }}>
+                      <AdminPasswordResetForm userId={s.id} />
                     </td>
                     <td className="admin-action-col" style={{ padding: '14px 16px' }}>
                       <AdminSubscriptionForm userId={s.id} plans={studentPlans} />
