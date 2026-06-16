@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Users, School, ClipboardList } from 'lucide-react';
 import AdminSubscriptionForm from '@/components/AdminSubscriptionForm';
 import AdminPasswordResetForm from '@/components/AdminPasswordResetForm';
+import AdminRoleForm from '@/components/AdminRoleForm';
 import { getDaysUntil } from '@/lib/subscriptions';
 
 export default async function AdminTeachers({ searchParams }: { searchParams?: Promise<{ plan?: string }> }) {
@@ -86,10 +87,10 @@ export default async function AdminTeachers({ searchParams }: { searchParams?: P
       ) : (
         <div className="glass-card admin-table-card">
           <div className="admin-table-scroll">
-          <table style={{ width: '100%', minWidth: 1360, borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', minWidth: 1520, borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                {['Giáo viên', 'Email', 'Lớp học', 'Học viên', 'Bài tập', 'Gói hiện tại', 'Mật khẩu', 'Cấp gói'].map((h, index, list) => (
+                {['Giáo viên', 'Email', 'Lớp học', 'Học viên', 'Bài tập', 'Gói hiện tại', 'Role', 'Mật khẩu', 'Cấp gói'].map((h, index, list) => (
                   <th key={h} className={index === list.length - 1 ? 'admin-action-col' : undefined} style={{ padding: '14px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -140,6 +141,9 @@ export default async function AdminTeachers({ searchParams }: { searchParams?: P
                           Chưa có gói
                         </span>
                       )}
+                    </td>
+                    <td style={{ padding: '14px 16px', minWidth: 170 }}>
+                      <AdminRoleForm userId={t.id} currentRole="teacher" />
                     </td>
                     <td style={{ padding: '14px 16px', minWidth: 250 }}>
                       <AdminPasswordResetForm userId={t.id} />
