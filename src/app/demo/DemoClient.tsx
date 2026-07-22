@@ -11,7 +11,7 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { TOPICS, LEVEL_INFO } from '@/lib/topics';
 import { CEFRLevel, ConversationEvaluation, Topic, Message } from '@/lib/types';
 
-type Step = 'level' | 'topic' | 'speaking';
+type Step = 'level' | 'topic' | 'ready' | 'speaking';
 type SpeechLanguage = 'auto' | 'en-US' | 'vi-VN';
 type SpeechEngine = 'cloud' | 'browser';
 type AssignmentBrief = {
@@ -639,12 +639,13 @@ function FinalEvaluationModal({
 
 // ---- Main Component ----
 export default function DemoClient() {
-  const [step, setStep] = useState<Step>('level');
   const searchParams = useSearchParams();
+  const [step, setStep] = useState<Step>('level');
   const [selectedLevel, setSelectedLevel] = useState<CEFRLevel | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [availableTopics, setAvailableTopics] = useState<Topic[]>(TOPICS);
-  const [pendingAutoStart, setPendingAutoStart] = useState(false);
+  // Vào từ bài tập/URL có sẵn chủ đề: khoá luôn, không được rơi về màn chọn level/chủ đề.
+  const isGuidedEntry = Boolean(searchParams?.get('topicId') || searchParams?.get('assignmentId'));
   const [isTTSEnabled, setIsTTSEnabled] = useState(true);
   const [sessionTime, setSessionTime] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
@@ -734,6 +735,12 @@ export default function DemoClient() {
     loadTopics();
   }, []);
 
+  // Vào từ bài tập: chỉ đưa tới màn chuẩn bị, và không bao giờ kéo ngược học viên
+  // ra khỏi phòng nói khi các request (topics, assignment) trả về muộn.
+  const enterGuidedStep = useCallback(() => {
+    setStep(current => (current === 'speaking' ? current : 'ready'));
+  }, []);
+
   // Assignment practice can use private teacher topics that are not returned by /api/topics.
   useEffect(() => {
     const assignmentId = searchParams?.get('assignmentId');
@@ -757,32 +764,26 @@ export default function DemoClient() {
         setAvailableTopics(prev => mergeTopics(TOPICS, prev, [assignmentTopic]));
         setSelectedTopic(assignmentTopic);
         setSelectedLevel(assignmentTopic.level);
-        setStep('topic');
+        enterGuidedStep();
       } catch {
         // keep URL-based topic resolution below as fallback
       }
     };
 
     loadAssignmentTopic();
-  }, [searchParams]);
+  }, [searchParams, enterGuidedStep]);
 
   useEffect(() => {
-    const topicId = searchParams?.get('topicId');
     const levelParam = searchParams?.get('level') as CEFRLevel | null;
-    const autoParam = searchParams?.get('autoStart');
 
     if (levelParam && ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(levelParam)) {
       setSelectedLevel(levelParam as CEFRLevel);
     }
 
-    if (autoParam === '1' || autoParam === 'true') {
-      setPendingAutoStart(true);
+    if (isGuidedEntry) {
+      enterGuidedStep();
     }
-
-    if (topicId && (levelParam || selectedLevel)) {
-      setStep('topic');
-    }
-  }, [searchParams, selectedLevel]);
+  }, [searchParams, isGuidedEntry, enterGuidedStep]);
 
   useEffect(() => {
     const topicId = searchParams?.get('topicId');
@@ -794,9 +795,9 @@ export default function DemoClient() {
       if (!selectedLevel) {
         setSelectedLevel(match.level);
       }
-      setStep('topic');
+      enterGuidedStep();
     }
-  }, [availableTopics, searchParams, selectedLevel]);
+  }, [availableTopics, searchParams, selectedLevel, enterGuidedStep]);
 
   const handleStartSession = useCallback(() => {
     if (!selectedLevel || !selectedTopic) return;
@@ -805,12 +806,6 @@ export default function DemoClient() {
     startSession(selectedTopic, selectedLevel, assignmentId);
     setStep('speaking');
   }, [searchParams, selectedLevel, selectedTopic, startSession]);
-
-  useEffect(() => {
-    if (!pendingAutoStart || !selectedTopic || !selectedLevel || step === 'speaking' || isLoading) return;
-    handleStartSession();
-    setPendingAutoStart(false);
-  }, [pendingAutoStart, selectedTopic, selectedLevel, step, isLoading, handleStartSession]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
@@ -1402,6 +1397,83 @@ export default function DemoClient() {
         </div>
       )}
 
+      {/* ===== STEP: READY — chuẩn bị trước khi nói ===== */}
+      {step === 'ready' && selectedTopic && (
+        <div style={{ position: 'relative', zIndex: 1, padding: '100px 24px 60px', maxWidth: 720, margin: '0 auto' }}>
+          <div className="glass-card" style={{ padding: '32px 30px', textAlign: 'center' }}>
+            <span style={{ fontSize: 52, display: 'block', marginBottom: 12 }}>{selectedTopic.icon}</span>
+
+            {assignmentBrief && (
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 6 }}>
+                {assignmentBrief.className} · {assignmentBrief.title}
+              </p>
+            )}
+
+            <h1 style={{
+              fontFamily: 'Outfit, sans-serif', fontWeight: 800,
+              fontSize: 'clamp(24px, 4vw, 34px)', color: 'var(--text-primary)', marginBottom: 8,
+            }}>
+              {selectedTopic.title}
+            </h1>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 24 }}>
+              Level {selectedTopic.level}
+            </p>
+
+            <div style={{
+              padding: '18px 20px', borderRadius: 12, background: '#F9FAFB',
+              border: '1px solid #E5E7EB', textAlign: 'left', marginBottom: 20,
+            }}>
+              <p style={{ fontSize: 11, fontWeight: 850, color: 'var(--text-muted)', marginBottom: 6 }}>
+                AI SẼ MỞ ĐẦU BẰNG CÂU
+              </p>
+              <p style={{ fontSize: 15, color: 'var(--text-primary)', lineHeight: 1.6 }}>
+                “{selectedTopic.openingQuestion}”
+              </p>
+            </div>
+
+            {assignmentBrief && (
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
+                <ReadyChip label={`Tối thiểu ${Math.round(assignmentBrief.minDurationSec / 60)} phút`} />
+                <ReadyChip label={`Tối thiểu ${assignmentBrief.minMessages} lượt nói`} />
+              </div>
+            )}
+
+            <div style={{
+              padding: '14px 18px', borderRadius: 12, background: '#FFFBEB',
+              border: '1px solid #FDE68A', textAlign: 'left', marginBottom: 24,
+            }}>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.65 }}>
+                Chuẩn bị xong hãy bấm bắt đầu. Trình duyệt sẽ xin quyền dùng micro —
+                hãy chọn <strong>Cho phép</strong>, rồi trả lời AI bằng tiếng Anh.
+              </p>
+            </div>
+
+            <button
+              id="start-ready-btn"
+              className="btn-primary"
+              onClick={handleStartSession}
+              style={{
+                width: '100%', padding: '15px 0', fontSize: 16,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <Mic size={18} />
+              Bắt đầu nói
+            </button>
+
+            {!isGuidedEntry && (
+              <button
+                onClick={() => setStep('topic')}
+                className="btn-secondary"
+                style={{ width: '100%', padding: '12px 0', fontSize: 14, marginTop: 10 }}
+              >
+                ← Chọn chủ đề khác
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ===== STEP: SPEAKING INTERFACE ===== */}
       {step === 'speaking' && (
         <div style={{
@@ -1778,3 +1850,14 @@ const miniPracticeButtonStyle = {
   alignItems: 'center',
   gap: 6,
 };
+
+function ReadyChip({ label }: { label: string }) {
+  return (
+    <span style={{
+      fontSize: 12, fontWeight: 700, padding: '6px 12px', borderRadius: 999,
+      background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE',
+    }}>
+      {label}
+    </span>
+  );
+}
