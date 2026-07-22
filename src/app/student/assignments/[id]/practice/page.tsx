@@ -59,13 +59,23 @@ export default function AssignmentPracticePage() {
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  // Tính lúc tải dữ liệu chứ không tính trong lúc render, để tránh gọi Date.now()
+  // giữa render (React coi là impure và kết quả có thể đổi bất chợt).
+  const [isOverdue, setIsOverdue] = useState(false);
 
   useEffect(() => {
     fetch(`/api/assignments/${id}`)
       .then(response => response.json())
       .then(data => {
-        if (data.error) setError(data.error);
-        else setAssignment(data);
+        if (data.error) {
+          setError(data.error);
+          return;
+        }
+        setAssignment(data);
+        const deadlineAt = data.deadline ? new Date(data.deadline) : null;
+        setIsOverdue(Boolean(
+          deadlineAt && !Number.isNaN(deadlineAt.getTime()) && deadlineAt.getTime() < Date.now()
+        ));
       })
       .catch(() => setError('Không thể tải bài tập'))
       .finally(() => setLoading(false));
@@ -121,11 +131,22 @@ export default function AssignmentPracticePage() {
               <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 6 }}>{assignment.class.name} · Level {assignment.topic.level} · {assignment.topic.title}</p>
               <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Deadline: {formatDeadline(assignment.deadline)}</p>
             </div>
-            <Link href={practiceUrl} style={{ textDecoration: 'none' }}>
-              <button className="btn-primary" id="start-practice-btn" style={{ padding: '13px 22px', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <Mic size={17} /> Vào phòng luyện
+            {isOverdue ? (
+              <button
+                className="btn-primary"
+                id="start-practice-btn"
+                disabled
+                style={{ padding: '13px 22px', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: 0.5, cursor: 'not-allowed' }}
+              >
+                <AlertCircle size={17} /> Đã hết hạn nộp
               </button>
-            </Link>
+            ) : (
+              <Link href={practiceUrl} style={{ textDecoration: 'none' }}>
+                <button className="btn-primary" id="start-practice-btn" style={{ padding: '13px 22px', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <Mic size={17} /> Vào phòng luyện
+                </button>
+              </Link>
+            )}
           </div>
         </section>
 
@@ -183,13 +204,25 @@ export default function AssignmentPracticePage() {
               </div>
             </div>
 
-            <Link href={practiceUrl} style={{ textDecoration: 'none', display: 'block' }}>
-              <button className="btn-primary" style={{ width: '100%', padding: '15px 0', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                <Mic size={18} /> Bắt đầu ngay
-              </button>
-            </Link>
+            {isOverdue ? (
+              <div className="glass-card" style={{ padding: 18, borderColor: '#FECACA', background: '#FEF2F2' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <AlertCircle size={17} style={{ color: '#B91C1C', flexShrink: 0, marginTop: 1 }} />
+                  <p style={{ fontSize: 13, color: '#B91C1C', lineHeight: 1.65 }}>
+                    Bài tập đã hết hạn nộp nên không thể luyện tiếp. Giáo viên chỉ ghi nhận
+                    kết quả luyện trước deadline — hãy liên hệ giáo viên nếu bạn cần gia hạn.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <Link href={practiceUrl} style={{ textDecoration: 'none', display: 'block' }}>
+                <button className="btn-primary" style={{ width: '100%', padding: '15px 0', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <Mic size={18} /> Bắt đầu ngay
+                </button>
+              </Link>
+            )}
 
-            {session && (
+            {session && !isOverdue && (
               <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
                 Kết quả sẽ được tự động lưu vào tài khoản của bạn
               </p>

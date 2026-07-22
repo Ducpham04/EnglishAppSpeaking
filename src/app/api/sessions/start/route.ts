@@ -38,12 +38,24 @@ export async function POST(request: NextRequest) {
             students: { some: { studentId: user.id, status: 'active' } },
           },
         },
-        select: { topicId: true },
+        select: { topicId: true, deadline: true },
       });
 
       if (!assignment) {
         return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
       }
+
+      // Giáo viên chỉ ghi nhận kết quả luyện trước deadline, nên hết hạn là khoá.
+      if (assignment.deadline && assignment.deadline.getTime() < Date.now()) {
+        return NextResponse.json(
+          {
+            error: 'Bài tập đã hết hạn nộp. Hãy liên hệ giáo viên nếu bạn cần được gia hạn.',
+            reason: 'deadline_passed',
+          },
+          { status: 403 }
+        );
+      }
+
       assignmentTopicId = assignment.topicId;
     }
 

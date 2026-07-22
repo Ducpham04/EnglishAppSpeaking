@@ -20,6 +20,7 @@ type AssignmentBrief = {
   minDurationSec: number;
   minMessages: number;
   className: string;
+  isOverdue: boolean;
 };
 type PracticeRecap = {
   topic: Topic;
@@ -755,12 +756,16 @@ export default function DemoClient() {
         if (!assignment?.topic?.id || !assignment?.topic?.title) return;
 
         const assignmentTopic = normalizeTopic(assignment.topic);
+        const deadlineAt = assignment.deadline ? new Date(assignment.deadline) : null;
         setAssignmentBrief({
           title: assignment.title,
           instruction: assignment.instruction,
           minDurationSec: assignment.minDurationSec,
           minMessages: assignment.minMessages,
           className: assignment.class?.name || 'Lớp học',
+          isOverdue: Boolean(
+            deadlineAt && !Number.isNaN(deadlineAt.getTime()) && deadlineAt.getTime() < Date.now()
+          ),
         });
         setAvailableTopics(prev => mergeTopics(TOPICS, prev, [assignmentTopic]));
         setSelectedTopic(assignmentTopic);
@@ -1479,27 +1484,45 @@ export default function DemoClient() {
             )}
 
             <div style={{
-              padding: '14px 18px', borderRadius: 12, background: '#FFFBEB',
-              border: '1px solid #FDE68A', textAlign: 'left', marginBottom: 24,
+              padding: '14px 18px', borderRadius: 12,
+              background: assignmentBrief?.isOverdue ? '#FEF2F2' : '#FFFBEB',
+              border: `1px solid ${assignmentBrief?.isOverdue ? '#FECACA' : '#FDE68A'}`,
+              textAlign: 'left', marginBottom: 24,
             }}>
-              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.65 }}>
-                Chuẩn bị xong hãy bấm bắt đầu. Trình duyệt sẽ xin quyền dùng micro —
-                hãy chọn <strong>Cho phép</strong>, rồi trả lời AI bằng tiếng Anh.
+              <p style={{
+                fontSize: 13, lineHeight: 1.65,
+                color: assignmentBrief?.isOverdue ? '#B91C1C' : 'var(--text-secondary)',
+              }}>
+                {assignmentBrief?.isOverdue ? (
+                  <>Bài tập đã hết hạn nộp nên không thể luyện tiếp. Giáo viên chỉ ghi nhận
+                    kết quả luyện trước deadline — hãy liên hệ giáo viên nếu bạn cần gia hạn.</>
+                ) : (
+                  <>Chuẩn bị xong hãy bấm bắt đầu. Trình duyệt sẽ xin quyền dùng micro —
+                    hãy chọn <strong>Cho phép</strong>, rồi trả lời AI bằng tiếng Anh.</>
+                )}
               </p>
             </div>
 
-            <button
-              id="start-ready-btn"
-              className="btn-primary"
-              onClick={handleStartSession}
-              style={{
-                width: '100%', padding: '15px 0', fontSize: 16,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}
-            >
-              <Mic size={18} />
-              Bắt đầu nói
-            </button>
+            {assignmentBrief?.isOverdue ? (
+              <Link href="/student/assignments" style={{ textDecoration: 'none', display: 'block' }}>
+                <button className="btn-secondary" style={{ width: '100%', padding: '14px 0', fontSize: 15 }}>
+                  Về danh sách bài tập
+                </button>
+              </Link>
+            ) : (
+              <button
+                id="start-ready-btn"
+                className="btn-primary"
+                onClick={handleStartSession}
+                style={{
+                  width: '100%', padding: '15px 0', fontSize: 16,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                <Mic size={18} />
+                Bắt đầu nói
+              </button>
+            )}
 
             {!isGuidedEntry && (
               <button

@@ -652,6 +652,43 @@ describe('production API role and system flows', () => {
     });
   });
 
+  it('không cho bắt đầu bài tập đã quá deadline', async () => {
+    state.authSession = { user: { id: 'student-1', role: 'student' } };
+    state.assignmentFindFirst.mockResolvedValueOnce({
+      topicId: 'topic-expected',
+      deadline: new Date(Date.now() - 60_000),
+    });
+
+    const overdue = await sessionStartRoute.POST(jsonRequest({
+      topicId: 'topic-expected',
+      level: 'B1',
+      assignmentId: 'assignment-1',
+    }));
+    const overdueJson = await overdue.json();
+
+    expect(overdue.status).toBe(403);
+    expect(overdueJson.reason).toBe('deadline_passed');
+    expect(state.sessionCreate).not.toHaveBeenCalled();
+
+    // Còn hạn thì vẫn vào bình thường.
+    state.assignmentFindFirst.mockResolvedValueOnce({
+      topicId: 'topic-expected',
+      deadline: new Date(Date.now() + 60_000),
+    });
+    state.topicFindUnique.mockResolvedValueOnce({ id: 'topic-expected' });
+    state.sessionFindFirst.mockResolvedValueOnce(null);
+    state.sessionCreate.mockResolvedValueOnce({ id: 'session-ok' });
+
+    const inTime = await sessionStartRoute.POST(jsonRequest({
+      topicId: 'topic-expected',
+      level: 'B1',
+      assignmentId: 'assignment-1',
+    }));
+
+    expect(inTime.status).toBe(200);
+    expect(state.sessionCreate).toHaveBeenCalledTimes(1);
+  });
+
   it('does not start a new assignment session after completion', async () => {
     state.authSession = { user: { id: 'student-1', role: 'student' } };
     state.assignmentFindFirst.mockResolvedValueOnce({ topicId: 'topic-expected' });
