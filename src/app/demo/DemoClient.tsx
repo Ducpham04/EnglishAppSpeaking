@@ -659,6 +659,7 @@ export default function DemoClient() {
   const [cloudSpeechError, setCloudSpeechError] = useState<string | null>(null);
   const [speechDraft, setSpeechDraft] = useState<ReturnType<typeof buildSpeechDraft> | null>(null);
   const [finalEvaluation, setFinalEvaluation] = useState<ConversationEvaluation | null>(null);
+  const [endOutcome, setEndOutcome] = useState<{ discarded: boolean; meetsRequirement?: boolean } | null>(null);
   const [assignmentBrief, setAssignmentBrief] = useState<AssignmentBrief | null>(null);
   const [lastPracticeRecap, setLastPracticeRecap] = useState<PracticeRecap | null>(null);
 
@@ -1054,6 +1055,30 @@ export default function DemoClient() {
 
   const handleFinishSession = useCallback(async () => {
     if (isLoading) return;
+
+    const spokenTurns = messages.filter(message => message.role === 'user').length;
+
+    // Cảnh báo trước khi kết thúc non, để học viên không mất công vào lại.
+    if (spokenTurns === 0) {
+      const leaveWithoutSpeaking = window.confirm(
+        'Bạn chưa nói câu nào nên buổi này sẽ không được chấm điểm và không tính là hoàn thành bài tập.\n\nVẫn thoát?'
+      );
+      if (!leaveWithoutSpeaking) return;
+    } else if (assignmentBrief) {
+      const shortOfTurns = spokenTurns < assignmentBrief.minMessages;
+      const shortOfTime = sessionTime < assignmentBrief.minDurationSec;
+      if (shortOfTurns || shortOfTime) {
+        const missing = [
+          shortOfTurns ? `mới nói ${spokenTurns}/${assignmentBrief.minMessages} lượt` : '',
+          shortOfTime ? `mới luyện ${Math.floor(sessionTime / 60)}/${Math.round(assignmentBrief.minDurationSec / 60)} phút` : '',
+        ].filter(Boolean).join(' và ');
+        const endAnyway = window.confirm(
+          `Bạn ${missing}, chưa đạt mốc của bài tập nên chưa được tính là hoàn thành.\n\nBuổi luyện vẫn được lưu và chấm điểm. Kết thúc luôn?`
+        );
+        if (!endAnyway) return;
+      }
+    }
+
     if (selectedTopic && selectedLevel) {
       setLastPracticeRecap({
         topic: selectedTopic,
@@ -1064,6 +1089,11 @@ export default function DemoClient() {
       });
     }
     const result = await endSession();
+    setEndOutcome(
+      result
+        ? { discarded: Boolean(result.discarded), meetsRequirement: result.meetsRequirement }
+        : { discarded: spokenTurns === 0 }
+    );
     if (result?.evaluation) {
       setFinalEvaluation(result.evaluation);
     }
@@ -1078,6 +1108,7 @@ export default function DemoClient() {
   }, [assignmentBrief, clearConversation, endSession, isLoading, messages, selectedLevel, selectedTopic, sessionTime]);
 
   const handleBackToPicker = useCallback(() => {
+    setEndOutcome(null);
     setFinalEvaluation(null);
     setStep('level');
     setSelectedLevel(null);
@@ -1085,6 +1116,7 @@ export default function DemoClient() {
   }, []);
 
   const handlePracticeAgain = useCallback(() => {
+    setEndOutcome(null);
     if (!lastPracticeRecap) {
       setFinalEvaluation(null);
       return;
@@ -1486,12 +1518,14 @@ export default function DemoClient() {
       {step === 'result' && (
         <div style={{ position: 'relative', zIndex: 1, padding: '100px 24px 60px', maxWidth: 640, margin: '0 auto' }}>
           <div className="glass-card" style={{ padding: '32px 30px', textAlign: 'center' }}>
-            <span style={{ fontSize: 48, display: 'block', marginBottom: 12 }}>✅</span>
+            <span style={{ fontSize: 48, display: 'block', marginBottom: 12 }}>
+              {endOutcome?.discarded ? '⚠️' : endOutcome?.meetsRequirement === false ? '📝' : '✅'}
+            </span>
             <h1 style={{
               fontFamily: 'Outfit, sans-serif', fontWeight: 800,
               fontSize: 'clamp(22px, 4vw, 30px)', color: 'var(--text-primary)', marginBottom: 8,
             }}>
-              Đã kết thúc buổi luyện
+              {endOutcome?.discarded ? 'Buổi luyện chưa được tính' : 'Đã kết thúc buổi luyện'}
             </h1>
             <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 22 }}>
               {lastPracticeRecap?.assignmentBrief
@@ -1506,10 +1540,21 @@ export default function DemoClient() {
               </div>
             )}
 
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.65 }}>
-              {finalEvaluation
-                ? 'Điểm và nhận xét chi tiết hiển thị ở bảng kết quả.'
-                : 'Kết quả đã được lưu vào tài khoản của bạn. Xem lại chi tiết trong mục Lịch sử luyện nói.'}
+            <p style={{
+              fontSize: 13, marginBottom: 24, lineHeight: 1.65,
+              padding: endOutcome?.discarded || endOutcome?.meetsRequirement === false ? '12px 14px' : 0,
+              borderRadius: 10,
+              background: endOutcome?.discarded ? '#FEF2F2' : endOutcome?.meetsRequirement === false ? '#FFFBEB' : 'transparent',
+              border: endOutcome?.discarded ? '1px solid #FECACA' : endOutcome?.meetsRequirement === false ? '1px solid #FDE68A' : 'none',
+              color: endOutcome?.discarded ? '#B91C1C' : 'var(--text-muted)',
+            }}>
+              {endOutcome?.discarded
+                ? 'Bạn chưa nói câu nào nên buổi này không được chấm điểm và không tính là hoàn thành bài tập. Hãy luyện lại và trả lời AI ít nhất một lượt.'
+                : endOutcome?.meetsRequirement === false
+                  ? 'Buổi luyện đã được lưu và chấm điểm, nhưng chưa đạt mốc tối thiểu nên bài tập chưa được tính là hoàn thành.'
+                  : finalEvaluation
+                    ? 'Điểm và nhận xét chi tiết hiển thị ở bảng kết quả.'
+                    : 'Kết quả đã được lưu vào tài khoản của bạn. Xem lại chi tiết trong mục Lịch sử luyện nói.'}
             </p>
 
             <button

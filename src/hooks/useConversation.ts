@@ -24,6 +24,11 @@ interface SessionEndResult {
   totalUserMessages?: number;
   totalAiMessages?: number;
   evaluation?: ConversationEvaluation;
+  /** Buổi bị huỷ vì học viên không nói câu nào — không chấm điểm. */
+  discarded?: boolean;
+  reason?: string;
+  /** Đã đạt mốc tối thiểu của bài tập hay chưa. */
+  meetsRequirement?: boolean;
 }
 
 interface ConversationProgress {

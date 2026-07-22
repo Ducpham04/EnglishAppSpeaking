@@ -57,6 +57,31 @@ export async function POST(request: NextRequest) {
     const correctionCount = existingSession.messages.filter(message => message.role === 'assistant' && isCorrectionMessage(message)).length;
     const finalUserMessages = persistedUserMessages || totalUserMessages;
     const finalAiMessages = persistedAiMessages || totalAiMessages;
+
+    // Học viên không nói câu nào: không chấm điểm, không gọi AI đánh giá (tránh
+    // nhận xét bịa và tốn token), và không đánh dấu hoàn thành bài tập.
+    if (finalUserMessages === 0) {
+      await prisma.session.update({
+        where: { id: existingSession.id },
+        data: {
+          endedAt,
+          durationSec,
+          totalUserMessages: 0,
+          totalAiMessages: finalAiMessages,
+          status: 'abandoned',
+        },
+      });
+
+      return NextResponse.json({
+        ok: true,
+        discarded: true,
+        reason: 'no_speech',
+        durationSec,
+        totalUserMessages: 0,
+        totalAiMessages: finalAiMessages,
+      });
+    }
+
     const finalScore = calculateSessionScore({
       userMessages: finalUserMessages,
       correctionCount,
@@ -86,6 +111,14 @@ export async function POST(request: NextRequest) {
       ? Math.min(evaluation.taskScore, cappedOverallScore)
       : evaluation.taskScore;
 
+    // Bài tập chỉ được tính hoàn thành khi đạt đủ mốc giáo viên đặt ra. Buổi
+    // chưa đủ vẫn lưu điểm và feedback, nhưng không đánh dấu xong bài.
+    const requiredMessages = existingSession.assignment?.minMessages ?? 0;
+    const requiredDurationSec = existingSession.assignment?.minDurationSec ?? 0;
+    const meetsRequirement =
+      finalUserMessages >= requiredMessages && durationSec >= requiredDurationSec;
+    const sessionStatus = meetsRequirement ? 'completed' : 'incomplete';
+
     await prisma.session.update({
       where: { id: existingSession.id },
       data: {
@@ -104,7 +137,7 @@ export async function POST(request: NextRequest) {
           overallScore: cappedOverallScore,
           taskScore: gatedTaskScore,
         }),
-        status: 'completed',
+        status: sessionStatus,
       },
     });
 
@@ -114,6 +147,9 @@ export async function POST(request: NextRequest) {
       durationSec,
       totalUserMessages: finalUserMessages,
       totalAiMessages: finalAiMessages,
+      meetsRequirement,
+      requiredMessages,
+      requiredDurationSec,
       evaluation: {
         ...evaluation,
         overallScore: cappedOverallScore,

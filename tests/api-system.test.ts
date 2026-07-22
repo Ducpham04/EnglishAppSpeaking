@@ -121,6 +121,7 @@ import * as assignmentsRoute from '../src/app/api/assignments/route';
 import * as teacherTopicDetailRoute from '../src/app/api/teacher/topics/[id]/route';
 import * as sessionStartRoute from '../src/app/api/sessions/start/route';
 import * as sessionEndRoute from '../src/app/api/sessions/end/route';
+import { evaluateConversation } from '@/lib/ai';
 
 function jsonRequest(body: unknown) {
   return { json: async () => body } as unknown as NextRequest;
@@ -754,6 +755,72 @@ describe('production API role and system flows', () => {
         coherenceScore: 90,
         status: 'completed',
       }),
+    }));
+  });
+
+  it('không chấm điểm buổi luyện mà học viên không nói câu nào', async () => {
+    const evaluateConversationMock = vi.mocked(evaluateConversation);
+    evaluateConversationMock.mockClear();
+    state.authSession = { user: { id: 'student-1', role: 'student' } };
+    state.sessionFindFirst.mockResolvedValueOnce({
+      id: 'session-empty',
+      startedAt: new Date(Date.now() - 20_000),
+      level: 'B1',
+      topic: { title: 'Travel Plans' },
+      assignment: { title: 'Practice', instruction: 'Talk', minMessages: 5, minDurationSec: 300 },
+      messages: [{ role: 'assistant', corrections: null }],
+    });
+    state.sessionUpdate.mockResolvedValueOnce({ id: 'session-empty' });
+
+    const response = await sessionEndRoute.POST(jsonRequest({
+      sessionId: 'session-empty',
+      totalUserMessages: 0,
+      totalAiMessages: 1,
+      score: 100,
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.discarded).toBe(true);
+    expect(body.reason).toBe('no_speech');
+    expect(body.score).toBeUndefined();
+    // Không gọi AI đánh giá khi không có gì để đánh giá.
+    expect(evaluateConversationMock).not.toHaveBeenCalled();
+    expect(state.sessionUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'abandoned', totalUserMessages: 0 }),
+    }));
+  });
+
+  it('không đánh dấu hoàn thành khi buổi luyện chưa đạt mốc tối thiểu', async () => {
+    state.authSession = { user: { id: 'student-1', role: 'student' } };
+    state.sessionFindFirst.mockResolvedValueOnce({
+      id: 'session-short',
+      startedAt: new Date(Date.now() - 60_000),
+      level: 'B1',
+      topic: { title: 'Travel Plans' },
+      assignment: { title: 'Practice', instruction: 'Talk', minMessages: 5, minDurationSec: 300 },
+      messages: [
+        { role: 'user', corrections: null },
+        { role: 'user', corrections: null },
+        { role: 'assistant', corrections: null },
+      ],
+    });
+    state.sessionUpdate.mockResolvedValueOnce({ id: 'session-short' });
+
+    const response = await sessionEndRoute.POST(jsonRequest({
+      sessionId: 'session-short',
+      totalUserMessages: 2,
+      totalAiMessages: 1,
+      score: 90,
+    }));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.meetsRequirement).toBe(false);
+    // Vẫn lưu điểm để học viên xem lại, chỉ là chưa tính hoàn thành bài tập.
+    expect(typeof body.score).toBe('number');
+    expect(state.sessionUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'incomplete' }),
     }));
   });
 });
