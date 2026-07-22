@@ -63,8 +63,9 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      # E2E test cần tài khoản demo, nên CI dùng seed demo (DB throwaway).
       - name: Seed CI database
-        run: npm run prisma:seed
+        run: npm run prisma:seed:demo
 
       - name: Lint
         run: npm run lint

@@ -15,7 +15,7 @@ npm ci
 cp .env.example .env.local
 # chỉnh sửa .env.local trước khi chạy
 npm run prisma:dev
-npm run prisma:seed || true
+npm run prisma:seed:demo   # dữ liệu demo — CHỈ dùng cho môi trường dev
 npm run dev
 ```
 
@@ -31,6 +31,8 @@ Mở `http://localhost:3000` và kiểm tra ứng dụng.
 - `npm run e2e` — chạy Playwright E2E tests
 - `npm run prisma:migrate` — apply migrations production
 - `npm run prisma:dev` — tạo migration local
+- `npm run prisma:seed` — nạp chủ đề + gói dịch vụ, tạo admin từ `ADMIN_EMAIL`/`ADMIN_PASSWORD` (an toàn cho production)
+- `npm run prisma:seed:demo` — thêm tài khoản/lớp/bài tập demo (**chỉ dev & E2E test**)
 
 ## Cấu hình môi trường
 Sao chép `.env.example` thành `.env.local` và cập nhật giá trị.
@@ -92,10 +94,17 @@ Tài liệu vận hành:
 4. Đặt `NEXTAUTH_URL` bằng domain Vercel production.
 5. Đặt `NEXTAUTH_SECRET` bằng chuỗi ngẫu nhiên dài, ví dụ `openssl rand -base64 32`.
 6. Deploy với build command `npm run vercel-build`.
-7. Nếu cần dữ liệu mẫu, chạy local với production URL:
+7. Nạp dữ liệu nền tảng (chủ đề + gói) và tạo admin đầu tiên:
    ```bash
-   DATABASE_URL='postgresql://...' npm run prisma:seed
+   DATABASE_URL='postgresql://...' \
+   ADMIN_EMAIL='admin@congty.vn' \
+   ADMIN_PASSWORD='<mật khẩu mạnh, >= 12 ký tự>' \
+   npm run prisma:seed
    ```
+   Đổi mật khẩu admin ngay sau lần đăng nhập đầu tiên.
+
+> ⚠️ **Không chạy `npm run prisma:seed:demo` trên production.** Script đó tạo tài
+> khoản demo (`*@gbspeaking.com`) với mật khẩu công khai, chỉ dùng cho dev và E2E test.
 
 ## Ghi chú
 - SQLite chỉ dùng cho development/demo.
