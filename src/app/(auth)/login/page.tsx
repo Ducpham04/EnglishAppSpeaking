@@ -193,42 +193,6 @@ export default function LoginPage() {
                 Đăng ký miễn phí
               </Link>
             </p>
-
-            {/* Test accounts info */}
-            <div style={{
-              marginTop: 32, padding: '16px 20px',
-              background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.15)',
-              borderRadius: 12,
-            }}>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 10 }}>
-                🧪 Tài khoản test:
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {[
-                  { role: 'Admin', identifier: 'admin@gbspeaking.com', color: '#EF4444' },
-                  { role: 'Teacher', identifier: 'teacher@gbspeaking.com', color: '#F59E0B' },
-                  { role: 'Student', identifier: 'student@gbspeaking.com', color: '#10B981' },
-                ].map(acc => (
-                  <button
-                    key={acc.role}
-                    type="button"
-                    onClick={() => { setIdentifier(acc.identifier); setPassword(acc.role.toLowerCase() + '123'); }}
-                    style={{
-                      background: 'transparent', border: 'none', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4,
-                      background: `${acc.color}15`, color: acc.color, border: `1px solid ${acc.color}30`,
-                    }}>{acc.role}</span>
-                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{acc.identifier}</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>Click để điền</span>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>

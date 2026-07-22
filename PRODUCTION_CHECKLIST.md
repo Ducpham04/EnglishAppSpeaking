@@ -7,8 +7,8 @@
 - [ ] Fill `NEXTAUTH_SECRET`
 - [ ] Fill `DATABASE_URL`
 - [x] Run migrations: `npm run prisma:dev`
-- [x] Seed DB: `npm run prisma:seed || true`
-- [ ] Start dev server: `npm run dev`
+- [x] Seed DB: `npm run prisma:seed` (thêm `prisma:seed:demo` nếu cần dữ liệu mẫu — chỉ dev)
+- [x] Start dev server: `npm run dev`
 
 ## Code quality
 - [x] Lint code: `npm run lint`
@@ -23,6 +23,11 @@
 - [ ] Configure `GROQ_API_KEY`, `OPENAI_API_KEY`, or `GEMINI_API_KEY`
 - [ ] Configure production rate limiting if needed
 - [ ] Ensure no secrets are committed to Git
+- [x] Trang đăng nhập không hiển thị tài khoản test
+- [ ] Tạo admin đầu tiên qua `ADMIN_EMAIL` / `ADMIN_PASSWORD` rồi đổi mật khẩu sau lần đăng nhập đầu
+- [ ] KHÔNG chạy `npm run prisma:seed:demo` trên DB production
+- [ ] Xác nhận DB production không tồn tại tài khoản `*@gbspeaking.com`:
+      `select email from users where email like '%@gbspeaking.com';` phải trả về 0 dòng
 
 ## Deployment
 - [ ] Deploy to Vercel or Node.js host
