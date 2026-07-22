@@ -11,7 +11,7 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { TOPICS, LEVEL_INFO } from '@/lib/topics';
 import { CEFRLevel, ConversationEvaluation, Topic, Message } from '@/lib/types';
 
-type Step = 'level' | 'topic' | 'ready' | 'speaking';
+type Step = 'level' | 'topic' | 'ready' | 'speaking' | 'result';
 type SpeechLanguage = 'auto' | 'en-US' | 'vi-VN';
 type SpeechEngine = 'cloud' | 'browser';
 type AssignmentBrief = {
@@ -738,7 +738,7 @@ export default function DemoClient() {
   // Vào từ bài tập: chỉ đưa tới màn chuẩn bị, và không bao giờ kéo ngược học viên
   // ra khỏi phòng nói khi các request (topics, assignment) trả về muộn.
   const enterGuidedStep = useCallback(() => {
-    setStep(current => (current === 'speaking' ? current : 'ready'));
+    setStep(current => (current === 'speaking' || current === 'result' ? current : 'ready'));
   }, []);
 
   // Assignment practice can use private teacher topics that are not returned by /api/topics.
@@ -1069,12 +1069,20 @@ export default function DemoClient() {
     }
     clearConversation();
     window.speechSynthesis.cancel();
-    setStep('level');
-    setSelectedLevel(null);
-    setSelectedTopic(null);
+    // Giữ nguyên topic/level và chuyển sang màn kết quả. Không reset về 'level':
+    // khi vào từ bài tập, việc xoá selectedLevel làm effect chạy lại và kéo học
+    // viên ngược về màn chuẩn bị, trông như bấm Kết thúc không có tác dụng.
+    setStep('result');
     setSessionTime(0);
     setIsRecording(false);
   }, [assignmentBrief, clearConversation, endSession, isLoading, messages, selectedLevel, selectedTopic, sessionTime]);
+
+  const handleBackToPicker = useCallback(() => {
+    setFinalEvaluation(null);
+    setStep('level');
+    setSelectedLevel(null);
+    setSelectedTopic(null);
+  }, []);
 
   const handlePracticeAgain = useCallback(() => {
     if (!lastPracticeRecap) {
@@ -1470,6 +1478,73 @@ export default function DemoClient() {
                 ← Chọn chủ đề khác
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ===== STEP: RESULT — đã kết thúc buổi ===== */}
+      {step === 'result' && (
+        <div style={{ position: 'relative', zIndex: 1, padding: '100px 24px 60px', maxWidth: 640, margin: '0 auto' }}>
+          <div className="glass-card" style={{ padding: '32px 30px', textAlign: 'center' }}>
+            <span style={{ fontSize: 48, display: 'block', marginBottom: 12 }}>✅</span>
+            <h1 style={{
+              fontFamily: 'Outfit, sans-serif', fontWeight: 800,
+              fontSize: 'clamp(22px, 4vw, 30px)', color: 'var(--text-primary)', marginBottom: 8,
+            }}>
+              Đã kết thúc buổi luyện
+            </h1>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 22 }}>
+              {lastPracticeRecap?.assignmentBrief
+                ? `${lastPracticeRecap.assignmentBrief.title} · ${lastPracticeRecap.topic.title}`
+                : lastPracticeRecap?.topic.title ?? 'Buổi luyện đã được ghi nhận.'}
+            </p>
+
+            {lastPracticeRecap && (
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 22 }}>
+                <ReadyChip label={`${Math.floor(lastPracticeRecap.durationSec / 60)} phút ${lastPracticeRecap.durationSec % 60}s`} />
+                <ReadyChip label={`${lastPracticeRecap.userMessages} lượt nói`} />
+              </div>
+            )}
+
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.65 }}>
+              {finalEvaluation
+                ? 'Điểm và nhận xét chi tiết hiển thị ở bảng kết quả.'
+                : 'Kết quả đã được lưu vào tài khoản của bạn. Xem lại chi tiết trong mục Lịch sử luyện nói.'}
+            </p>
+
+            <button
+              className="btn-primary"
+              onClick={handlePracticeAgain}
+              style={{
+                width: '100%', padding: '14px 0', fontSize: 15,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <Mic size={17} /> Luyện lại chủ đề này
+            </button>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+              {assignmentBrief ? (
+                <Link href="/student/assignments" style={{ flex: 1, textDecoration: 'none' }}>
+                  <button className="btn-secondary" style={{ width: '100%', padding: '12px 0', fontSize: 14 }}>
+                    Về danh sách bài tập
+                  </button>
+                </Link>
+              ) : (
+                <button
+                  className="btn-secondary"
+                  onClick={handleBackToPicker}
+                  style={{ flex: 1, padding: '12px 0', fontSize: 14 }}
+                >
+                  Chọn chủ đề khác
+                </button>
+              )}
+              <Link href="/student/sessions" style={{ flex: 1, textDecoration: 'none' }}>
+                <button className="btn-secondary" style={{ width: '100%', padding: '12px 0', fontSize: 14 }}>
+                  Lịch sử luyện nói
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
       )}
